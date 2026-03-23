@@ -29,7 +29,8 @@ defmodule Mix.Tasks.Gen.App do
 
   @impl true
   def run(args) do
-    {opts, args, _} = OptionParser.parse(args, switches: [skip_git: :boolean, hibana_path: :string])
+    {opts, args, _} =
+      OptionParser.parse(args, switches: [skip_git: :boolean, hibana_path: :string])
 
     case args do
       [path | _] ->

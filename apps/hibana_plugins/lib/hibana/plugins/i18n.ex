@@ -144,7 +144,9 @@ defmodule Hibana.Plugins.I18n do
         rescue
           ArgumentError -> :ok
         end
-      _ -> :ok
+
+      _ ->
+        :ok
     end
   end
 end

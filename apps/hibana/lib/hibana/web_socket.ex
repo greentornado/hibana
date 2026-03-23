@@ -107,6 +107,9 @@ defmodule Hibana.WebSocket do
     conn
     |> put_private(:websocket_handler, handler)
     |> put_private(:websocket_handler_opts, handler_opts)
-    |> upgrade_adapter(:websocket, {Hibana.WebSocket.CowboyAdapter, {handler, handler_opts}, %{idle_timeout: 60_000}})
+    |> upgrade_adapter(
+      :websocket,
+      {Hibana.WebSocket.CowboyAdapter, {handler, handler_opts}, %{idle_timeout: 60_000}}
+    )
   end
 end

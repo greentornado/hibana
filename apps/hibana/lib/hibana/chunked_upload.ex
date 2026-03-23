@@ -217,23 +217,28 @@ defmodule Hibana.ChunkedUpload do
   defp assemble_chunks(chunk_dir, dest_path, total_chunks) do
     {:ok, dest_file} = File.open(dest_path, [:write, :raw])
 
-    result = try do
-      Enum.each(0..(total_chunks - 1), fn i ->
-        chunk_path = Path.join(chunk_dir, "chunk_#{String.pad_leading(to_string(i), 6, "0")}")
-        case File.read(chunk_path) do
-          {:ok, data} -> :file.write(dest_file, data)
-          {:error, _} -> throw({:missing_chunk, i})
-        end
-      end)
-      :ok
-    catch
-      {:missing_chunk, i} -> {:error, {:missing_chunk, i}}
-    after
-      File.close(dest_file)
-    end
+    result =
+      try do
+        Enum.each(0..(total_chunks - 1), fn i ->
+          chunk_path = Path.join(chunk_dir, "chunk_#{String.pad_leading(to_string(i), 6, "0")}")
+
+          case File.read(chunk_path) do
+            {:ok, data} -> :file.write(dest_file, data)
+            {:error, _} -> throw({:missing_chunk, i})
+          end
+        end)
+
+        :ok
+      catch
+        {:missing_chunk, i} -> {:error, {:missing_chunk, i}}
+      after
+        File.close(dest_file)
+      end
 
     case result do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         File.rm(dest_path)
         {:error, reason}

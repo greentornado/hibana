@@ -75,7 +75,9 @@ defmodule Hibana.Plugins.Metrics do
       :undefined ->
         :ets.new(:metrics, [:named_table, :set, :public, write_concurrency: true])
         :ets.insert(:metrics, {:requests_total, 0})
-      _ -> :ok
+
+      _ ->
+        :ok
     end
 
     try do
@@ -129,14 +131,26 @@ defmodule Hibana.Plugins.Metrics do
 
   defp start_timer(conn) do
     start = System.monotonic_time(:millisecond)
+
     conn
     |> assign(:request_start, start)
     |> Plug.Conn.register_before_send(fn conn ->
       if start do
         duration = System.monotonic_time(:millisecond) - start
-        :telemetry.execute([:hibana, :request, :duration], %{duration: duration}, %{method: conn.method, path: conn.request_path, status: conn.status})
-        :telemetry.execute([:hibana, :request, :total], %{count: 1}, %{method: conn.method, path: conn.request_path, status: conn.status})
+
+        :telemetry.execute([:hibana, :request, :duration], %{duration: duration}, %{
+          method: conn.method,
+          path: conn.request_path,
+          status: conn.status
+        })
+
+        :telemetry.execute([:hibana, :request, :total], %{count: 1}, %{
+          method: conn.method,
+          path: conn.request_path,
+          status: conn.status
+        })
       end
+
       conn
     end)
   end

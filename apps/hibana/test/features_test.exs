@@ -9,8 +9,13 @@ defmodule Hibana.FeaturesTest do
     original_blocked = Application.get_env(:hibana, :disabled_features)
 
     on_exit(fn ->
-      if original, do: Application.put_env(:hibana, :features, original), else: Application.delete_env(:hibana, :features)
-      if original_blocked, do: Application.put_env(:hibana, :disabled_features, original_blocked), else: Application.delete_env(:hibana, :disabled_features)
+      if original,
+        do: Application.put_env(:hibana, :features, original),
+        else: Application.delete_env(:hibana, :features)
+
+      if original_blocked,
+        do: Application.put_env(:hibana, :disabled_features, original_blocked),
+        else: Application.delete_env(:hibana, :disabled_features)
     end)
 
     Application.delete_env(:hibana, :disabled_features)

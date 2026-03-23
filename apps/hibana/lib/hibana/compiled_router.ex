@@ -149,14 +149,14 @@ defmodule Hibana.CompiledRouter do
           var!(conn)
         else
           case do_match(var!(conn).method, var!(conn).path_info) do
-          {:ok, handler, action, params} ->
-            var!(conn) = %{var!(conn) | params: Map.merge(var!(conn).params || %{}, params)}
-            invoke_handler(var!(conn), handler, action)
+            {:ok, handler, action, params} ->
+              var!(conn) = %{var!(conn) | params: Map.merge(var!(conn).params || %{}, params)}
+              invoke_handler(var!(conn), handler, action)
 
-          :nomatch ->
-            var!(conn)
-            |> put_resp_content_type("text/plain")
-            |> send_resp(404, "Not Found")
+            :nomatch ->
+              var!(conn)
+              |> put_resp_content_type("text/plain")
+              |> send_resp(404, "Not Found")
           end
         end
       end
@@ -226,6 +226,7 @@ defmodule Hibana.CompiledRouter do
     Enum.reduce(Enum.reverse(plugs), Macro.var(:conn, nil), fn {mod, opts}, acc ->
       quote do
         conn = unquote(acc)
+
         if conn.halted do
           conn
         else
