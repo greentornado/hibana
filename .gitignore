@@ -1,0 +1,33 @@
+# Build artifacts
+**/_build/
+**/deps/
+*.ez
+*.beam
+
+# Generated files
+/doc/
+/cover/
+*.plt
+*.plt.hash
+
+# Crash dumps
+erl_crash.dump
+
+# IDE / Editor
+.elixir_ls/
+.DS_Store
+*.swp
+*~
+
+# Environment
+.env
+*.env
+*.pem
+*.key
+
+# Uploads
+priv/uploads/
+
+# Queue data
+priv/queue/
+**/*/cover
