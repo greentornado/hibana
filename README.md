@@ -5,7 +5,7 @@
 A lightweight Elixir web framework built on Plug and Cowboy for APIs and microservices. Direct routing like Sinatra, powerful plugins like Phoenix, full OTP under the hood.
 
 - **10 lines** to a production-grade API
-- **30+ plugins** for auth, caching, real-time, monitoring
+- **35 plugins** for auth, caching, real-time, monitoring
 - **Millions of connections** on the BEAM without changing a line
 - **Fault tolerance** -- Supervisors restart failures before users notice
 
@@ -124,7 +124,7 @@ defmodule MyApp.UserController do
   end
 
   def create(conn) do
-    json(conn, %{created: conn.body_params}, status: 201)
+    conn |> Plug.Conn.put_status(201) |> json(%{created: conn.body_params})
   end
 end
 ```
@@ -193,7 +193,7 @@ end
 | **Setup** | Minimal | Generator with conventions | Minimal |
 | **Routing** | Sinatra-style DSL | MVC-style | Manual |
 | **Inline handlers** | Yes | No | No |
-| **Plugins** | 30+ built-in | Rich ecosystem | Minimal |
+| **Plugins** | 35 built-in | Rich ecosystem | Minimal |
 | **LiveView** | Basic pattern | Industry-leading | No |
 | **Learning curve** | ~1 hour | ~1 day | ~1 hour |
 | **Best for** | APIs, microservices | Full-stack web apps | Libraries, middleware |
@@ -221,6 +221,10 @@ In the Japanese blacksmith tradition, the spark is the beginning of everything. 
 | `websocket_chat` | 4003 | WebSocket chat |
 | `liveview_counter` | 4004 | LiveView counter |
 | `background_jobs` | 4005 | Background jobs with Queue |
+| `commerce` | 4010 | E-commerce API (products, cart, orders, JWT) |
+| `chess` | 4011 | Chess game server with WebSocket |
+| `tictactoe` | 4012 | Tic-Tac-Toe with AI (minimax) and WebSocket |
+| `telegram_bot` | 4013 | Telegram bot with webhook |
 
 ```bash
 cd sample_apps/hello_world && mix deps.get && mix run
@@ -261,7 +265,7 @@ cd apps/hibana_plugins && MIX_ENV=test mix test
 hibana/
 ├── apps/
 │   ├── hibana/                # Core framework
-│   ├── hibana_plugins/        # 30+ built-in plugins
+│   ├── hibana_plugins/        # 35 built-in plugins
 │   ├── hibana_ecto/           # Database support (MySQL, PostgreSQL, MongoDB)
 │   └── hibana_generator/      # Mix tasks and project generator
 ├── sample_apps/               # Demo applications

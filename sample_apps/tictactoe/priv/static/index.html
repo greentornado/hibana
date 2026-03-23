@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-Tac-Toe</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      text-align: center;
+      max-width: 500px;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #e94560;
+    }
+    .status {
+      font-size: 1.2rem;
+      margin: 15px 0;
+      min-height: 30px;
+      color: #0f3460;
+      background: #e94560;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 120px);
+      grid-template-rows: repeat(3, 120px);
+      gap: 6px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .cell {
+      background: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 12px;
+      font-size: 3rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .cell:hover { background: #1a2a4e; transform: scale(1.05); }
+    .cell.x { color: #e94560; }
+    .cell.o { color: #0f3460; text-shadow: 0 0 10px #533483; }
+    .cell.disabled { cursor: not-allowed; opacity: 0.7; }
+    .controls {
+      margin: 20px 0;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    button:hover { background: #c73652; }
+    button.secondary {
+      background: #0f3460;
+    }
+    button.secondary:hover { background: #16213e; }
+    .mode-toggle {
+      margin: 15px 0;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .game-info {
+      font-size: 0.9rem;
+      color: #888;
+      margin-top: 10px;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tic-Tac-Toe</h1>
+
+    <div id="menu">
+      <p style="margin: 20px 0; font-size: 1.1rem;">Choose game mode:</p>
+      <div class="mode-toggle">
+        <button id="btn-pvp">Player vs Player</button>
+        <button id="btn-ai">Player vs AI</button>
+      </div>
+      <div style="margin-top: 20px;">
+        <input id="joinId" placeholder="Game ID to join" style="padding: 10px; border-radius: 8px; border: 2px solid #0f3460; background: #16213e; color: #eee; font-size: 1rem;">
+        <button class="secondary" id="btn-join" style="margin-left: 5px;">Join Game</button>
+      </div>
+    </div>
+
+    <div id="game" class="hidden">
+      <div class="status" id="status">Waiting...</div>
+
+      <div class="board" id="board"></div>
+
+      <div class="controls">
+        <button id="btn-new">New Game</button>
+      </div>
+
+      <div class="game-info">
+        Game ID: <span id="gameId">-</span> |
+        Mode: <span id="gameMode">-</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var gameId = null;
+    var ws = null;
+    var currentState = null;
+    var myPlayer = 'X';
+
+    document.getElementById('btn-pvp').addEventListener('click', function() { createGame('pvp'); });
+    document.getElementById('btn-ai').addEventListener('click', function() { createGame('ai'); });
+    document.getElementById('btn-join').addEventListener('click', joinGame);
+    document.getElementById('btn-new').addEventListener('click', newGame);
+
+    function createGame(mode) {
+      fetch('/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: mode })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.game) {
+          gameId = data.game.id;
+          myPlayer = 'X';
+          showGame(data.game);
+          connectWebSocket();
+        }
+      })
+      .catch(function(err) { console.error('Error creating game:', err); });
+    }
+
+    function joinGame() {
+      var id = document.getElementById('joinId').value.trim();
+      if (!id) return;
+
+      fetch('/games/' + encodeURIComponent(id))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.game) {
+          gameId = id;
+          myPlayer = 'O';
+          showGame(data.game);
+          connectWebSocket();
+        } else {
+          alert('Game not found');
+        }
+      })
+      .catch(function(err) { console.error('Error joining game:', err); });
+    }
+
+    function showGame(state) {
+      document.getElementById('menu').classList.add('hidden');
+      document.getElementById('game').classList.remove('hidden');
+      currentState = state;
+      renderBoard(state);
+      updateStatus(state);
+      document.getElementById('gameId').textContent = state.id;
+      document.getElementById('gameMode').textContent = state.mode === 'ai' ? 'vs AI' : 'PvP';
+    }
+
+    function renderBoard(state) {
+      var board = document.getElementById('board');
+      while (board.firstChild) { board.removeChild(board.firstChild); }
+
+      state.board.forEach(function(cell, i) {
+        var div = document.createElement('div');
+        div.className = 'cell';
+        if (cell) {
+          div.textContent = cell;
+          div.classList.add(cell.toLowerCase());
+          div.classList.add('disabled');
+        }
+        if (state.status !== 'playing') {
+          div.classList.add('disabled');
+        }
+        div.addEventListener('click', function() { makeMove(i); });
+        board.appendChild(div);
+      });
+    }
+
+    function updateStatus(state) {
+      var el = document.getElementById('status');
+      if (state.status === 'won') {
+        el.textContent = state.winner + ' wins!';
+      } else if (state.status === 'draw') {
+        el.textContent = 'Draw!';
+      } else {
+        el.textContent = state.current_player + "'s turn";
+      }
+    }
+
+    function makeMove(position) {
+      if (!currentState || currentState.status !== 'playing') return;
+      if (currentState.board[position] !== null) return;
+
+      var player = currentState.current_player;
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'move', position: position, player: player }));
+      } else {
+        fetch('/games/' + encodeURIComponent(gameId) + '/move', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ position: position, player: player })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.game) {
+            currentState = data.game;
+            renderBoard(data.game);
+            updateStatus(data.game);
+          } else if (data.error) {
+            console.log('Move error:', data.error);
+          }
+        });
+      }
+    }
+
+    function connectWebSocket() {
+      if (!gameId) return;
+
+      var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      var url = protocol + '//' + window.location.host + '/games/' + encodeURIComponent(gameId) + '/ws';
+
+      ws = new WebSocket(url);
+
+      ws.onopen = function() {
+        console.log('WebSocket connected');
+        ws.send(JSON.stringify({ action: 'get_state' }));
+      };
+
+      ws.onmessage = function(event) {
+        var data = JSON.parse(event.data);
+        if (data.type === 'game_update' || data.type === 'move_accepted' || data.type === 'state') {
+          currentState = data.game;
+          renderBoard(data.game);
+          updateStatus(data.game);
+        } else if (data.type === 'error') {
+          console.log('WS error:', data.message);
+        }
+      };
+
+      ws.onclose = function() {
+        console.log('WebSocket disconnected');
+        setTimeout(function() { if (gameId) connectWebSocket(); }, 2000);
+      };
+    }
+
+    function newGame() {
+      if (ws) { ws.close(); ws = null; }
+      gameId = null;
+      currentState = null;
+      document.getElementById('menu').classList.remove('hidden');
+      document.getElementById('game').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
