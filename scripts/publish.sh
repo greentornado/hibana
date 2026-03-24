@@ -15,9 +15,9 @@ publish_app() {
   local version
   version=$(grep '@version' "$ROOT/apps/$app/mix.exs" | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
-  # Check if already published
+  # Check if already published via hex.pm API
   local replace_flag=""
-  if mix hex.info "$app" "$version" &>/dev/null; then
+  if curl -sf "https://hex.pm/api/packages/$app/releases/$version" >/dev/null 2>&1; then
     echo ">>> $app@$version already published — updating with --replace"
     replace_flag="--replace"
   else
@@ -31,7 +31,6 @@ publish_app() {
   [ -f "$ROOT/apps/$app/LICENSE" ] && cp "$ROOT/apps/$app/LICENSE" "$WORK/"
   [ -f "$ROOT/apps/$app/README.md" ] && cp "$ROOT/apps/$app/README.md" "$WORK/"
   [ -f "$ROOT/apps/$app/.formatter.exs" ] && cp "$ROOT/apps/$app/.formatter.exs" "$WORK/"
-  # Copy extras from umbrella root if not in app dir
   [ ! -f "$WORK/CHANGELOG.md" ] && [ -f "$ROOT/CHANGELOG.md" ] && cp "$ROOT/CHANGELOG.md" "$WORK/"
 
   cd "$WORK"
