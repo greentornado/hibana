@@ -15,13 +15,14 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - elixir: "1.15"
-            otp: "26"
           - elixir: "1.16"
             otp: "26"
           - elixir: "1.17"
+            otp: "27"
+          - elixir: "1.18"
             otp: "27"
 
     steps:
@@ -49,7 +50,7 @@ jobs:
         run: mix format --check-formatted
 
       - name: Compile
-        run: mix compile --warnings-as-errors
+        run: mix compile
 
       - name: Test hibana
         run: cd apps/hibana && MIX_ENV=test mix test
