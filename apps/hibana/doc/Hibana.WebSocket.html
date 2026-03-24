@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Hibana v0.1.0">
+
+
+    <title>Hibana.WebSocket — Hibana v0.1.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-8A370FFC.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="https://github.com/greentornado/hibana" class="sidebar-projectName" translate="no">
+Hibana
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-behaviour" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Hibana</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Hibana.<wbr>WebSocket</span> <small>behaviour</small>
+      <small class="app-vsn" translate="no">(Hibana v0.1.0)</small>
+
+    </h1>
+
+<a href="Hibana.WebSocket.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/web_socket.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>WebSocket handler behavior for Hibana.</p><h2 id="module-usage" class="section-heading"><a href="#module-usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Usage</span></h2><pre><code class="makeup elixir" translate="no"><span class="kd">defmodule</span><span class="w"> </span><span class="nc">MyApp.ChatSocket</span><span class="w"> </span><span class="k" data-group-id="7785631825-1">do</span><span class="w">
+  </span><span class="kn">use</span><span class="w"> </span><span class="nc">Hibana.WebSocket</span><span class="w">
+
+  </span><span class="kd">def</span><span class="w"> </span><span class="nf">handle_in</span><span class="p" data-group-id="7785631825-2">(</span><span class="n">msg</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="7785631825-2">)</span><span class="w"> </span><span class="k" data-group-id="7785631825-3">do</span><span class="w">
+    </span><span class="p" data-group-id="7785631825-4">{</span><span class="ss">:reply</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7785631825-5">{</span><span class="ss">:text</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;echo: </span><span class="si" data-group-id="7785631825-6">#{</span><span class="n">msg</span><span class="si" data-group-id="7785631825-6">}</span><span class="s">&quot;</span><span class="p" data-group-id="7785631825-5">}</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="p" data-group-id="7785631825-4">}</span><span class="w">
+  </span><span class="k" data-group-id="7785631825-3">end</span><span class="w">
+</span><span class="k" data-group-id="7785631825-1">end</span></code></pre><h2 id="module-routing" class="section-heading"><a href="#module-routing" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Routing</span></h2><p>In your router, call <a href="#upgrade/3"><code class="inline">Hibana.WebSocket.upgrade/3</code></a>:</p><pre><code class="makeup elixir" translate="no"><span class="n">get</span><span class="w"> </span><span class="s">&quot;/ws/chat&quot;</span><span class="p">,</span><span class="w"> </span><span class="k" data-group-id="0069213973-1">fn</span><span class="w"> </span><span class="n">conn</span><span class="w"> </span><span class="o">-&gt;</span><span class="w">
+  </span><span class="nc">Hibana.WebSocket</span><span class="o">.</span><span class="n">upgrade</span><span class="p" data-group-id="0069213973-2">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="nc">MyApp.ChatSocket</span><span class="p" data-group-id="0069213973-2">)</span><span class="w">
+</span><span class="k" data-group-id="0069213973-1">end</span></code></pre><p>Or in a controller:</p><pre><code class="makeup elixir" translate="no"><span class="kd">def</span><span class="w"> </span><span class="nf">websocket</span><span class="p" data-group-id="8672283105-1">(</span><span class="n">conn</span><span class="p" data-group-id="8672283105-1">)</span><span class="w"> </span><span class="k" data-group-id="8672283105-2">do</span><span class="w">
+  </span><span class="nc">Hibana.WebSocket</span><span class="o">.</span><span class="n">upgrade</span><span class="p" data-group-id="8672283105-3">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="nc">MyApp.ChatSocket</span><span class="p" data-group-id="8672283105-3">)</span><span class="w">
+</span><span class="k" data-group-id="8672283105-2">end</span></code></pre>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-callbacks summary">
+  <h3>
+    <a href="#callbacks">Callbacks</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:handle_binary/2" data-no-tooltip="" translate="no">handle_binary(message, state)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:handle_connect/2" data-no-tooltip="" translate="no">handle_connect(info, state)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:handle_disconnect/2" data-no-tooltip="" translate="no">handle_disconnect(reason, state)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:handle_in/2" data-no-tooltip="" translate="no">handle_in(message, state)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:handle_info/2" data-no-tooltip="" translate="no">handle_info(message, state)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#c:init/2" data-no-tooltip="" translate="no">init(conn, opts)</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_link/2" data-no-tooltip="" translate="no">start_link(handler, opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Starts a WebSocket handler.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#upgrade/3" data-no-tooltip="" translate="no">upgrade(conn, handler, handler_opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Upgrades an HTTP connection to WebSocket.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="callbacks" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#callbacks">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Callbacks</span>
+    </h2>
+
+    <div class="callbacks-list">
+<section class="detail" id="c:handle_binary/2">
+
+  <div class="detail-header">
+    <a href="#c:handle_binary/2" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_binary(message, state)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/web_socket.ex#L46" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> handle_binary(message :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>(), state :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:reply, reply :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:stop, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:handle_connect/2">
+
+  <div class="detail-header">
+    <a href="#c:handle_connect/2" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_connect(info, state)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/web_socket.ex#L37" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> handle_connect(info :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), state :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:stop, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:handle_disconnect/2">
+
+  <div class="detail-header">
+    <a href="#c:handle_disconnect/2" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_disconnect(reason, state)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/web_socket.ex#L39" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> handle_disconnect(reason :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), state :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:handle_in/2">
+
+  <div class="detail-header">
+    <a href="#c:handle_in/2" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_in(message, state)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/web_socket.ex#L41" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> handle_in(message :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), state :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:reply, reply :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:stop, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:handle_info/2">
+
+  <div class="detail-header">
+    <a href="#c:handle_info/2" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">handle_info(message, state)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/web_socket.ex#L51" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> handle_info(message :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), state :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:push, push :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:stop, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="c:init/2">
+
+  <div class="detail-header">
+    <a href="#c:init/2" class="detail-link" data-no-tooltip="" aria-label="Link to this callback">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">init(conn, opts)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/web_socket.ex#L33" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@callback</span> init(conn :: <a href="https://hexdocs.pm/plug/1.19.1/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), opts :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()) ::
+  {:ok, <a href="https://hexdocs.pm/plug/1.19.1/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), state :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:halt, <a href="https://hexdocs.pm/plug/1.19.1/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="start_link/2">
+
+    <span id="start_link/1"></span>
+
+  <div class="detail-header">
+    <a href="#start_link/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start_link(handler, opts \\ [])</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/web_socket.ex#L96" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Starts a WebSocket handler.</p>
+  </section>
+</section>
+<section class="detail" id="upgrade/3">
+
+    <span id="upgrade/2"></span>
+
+  <div class="detail-header">
+    <a href="#upgrade/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">upgrade(conn, handler, handler_opts \\ [])</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/web_socket.ex#L106" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Upgrades an HTTP connection to WebSocket.</p><p>This initiates the Cowboy WebSocket upgrade handshake. The <code class="inline">handler</code> module
+must <code class="inline">use Hibana.WebSocket</code> and implement the required callbacks.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/hibana/0.1.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/hibana/0.1.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Hibana.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

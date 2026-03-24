@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Hibana v0.1.0">
+
+
+    <title>Hibana.ChunkedUpload — Hibana v0.1.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-8A370FFC.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="https://github.com/greentornado/hibana" class="sidebar-projectName" translate="no">
+Hibana
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Hibana</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Hibana.<wbr>ChunkedUpload</span> 
+      <small class="app-vsn" translate="no">(Hibana v0.1.0)</small>
+
+    </h1>
+
+<a href="Hibana.ChunkedUpload.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/chunked_upload.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Large file upload support with chunked/resumable uploads (100GB+).</p><p>Supports streaming multipart parsing without loading the entire file into memory,
+chunked uploads with resume capability, and progress tracking.</p><h2 id="module-usage" class="section-heading"><a href="#module-usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Usage</span></h2><pre><code class="makeup elixir" translate="no"><span class="c1"># Simple streaming upload (handles any size)</span><span class="w">
+</span><span class="kd">def</span><span class="w"> </span><span class="nf">upload</span><span class="p" data-group-id="6376843127-1">(</span><span class="n">conn</span><span class="p" data-group-id="6376843127-1">)</span><span class="w"> </span><span class="k" data-group-id="6376843127-2">do</span><span class="w">
+  </span><span class="p" data-group-id="6376843127-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">file_info</span><span class="p" data-group-id="6376843127-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Hibana.ChunkedUpload</span><span class="o">.</span><span class="k">receive</span><span class="p" data-group-id="6376843127-4">(</span><span class="n">conn</span><span class="p">,</span><span class="w">
+    </span><span class="ss">upload_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;priv/uploads&quot;</span><span class="p">,</span><span class="w">
+    </span><span class="ss">max_size</span><span class="p">:</span><span class="w"> </span><span class="ss">:infinity</span><span class="w">
+  </span><span class="p" data-group-id="6376843127-4">)</span><span class="w">
+  </span><span class="n">json</span><span class="p" data-group-id="6376843127-5">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="n">file_info</span><span class="p" data-group-id="6376843127-5">)</span><span class="w">
+</span><span class="k" data-group-id="6376843127-2">end</span><span class="w">
+
+</span><span class="c1"># Chunked/resumable upload</span><span class="w">
+</span><span class="c1"># Client sends chunks with headers:</span><span class="w">
+</span><span class="c1">#   X-Upload-Id: unique-id</span><span class="w">
+</span><span class="c1">#   X-Chunk-Number: 0</span><span class="w">
+</span><span class="c1">#   X-Total-Chunks: 100</span><span class="w">
+</span><span class="c1">#   Content-Range: bytes 0-1048575/104857600</span><span class="w">
+
+</span><span class="kd">def</span><span class="w"> </span><span class="nf">chunked_upload</span><span class="p" data-group-id="6376843127-6">(</span><span class="n">conn</span><span class="p" data-group-id="6376843127-6">)</span><span class="w"> </span><span class="k" data-group-id="6376843127-7">do</span><span class="w">
+  </span><span class="k">case</span><span class="w"> </span><span class="nc">Hibana.ChunkedUpload</span><span class="o">.</span><span class="n">receive_chunk</span><span class="p" data-group-id="6376843127-8">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="ss">upload_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;priv/uploads&quot;</span><span class="p" data-group-id="6376843127-8">)</span><span class="w"> </span><span class="k" data-group-id="6376843127-9">do</span><span class="w">
+    </span><span class="p" data-group-id="6376843127-10">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="ss">:complete</span><span class="p">,</span><span class="w"> </span><span class="n">file_info</span><span class="p" data-group-id="6376843127-10">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">json</span><span class="p" data-group-id="6376843127-11">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6376843127-12">%{</span><span class="ss">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;complete&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">file</span><span class="p">:</span><span class="w"> </span><span class="n">file_info</span><span class="p" data-group-id="6376843127-12">}</span><span class="p" data-group-id="6376843127-11">)</span><span class="w">
+    </span><span class="p" data-group-id="6376843127-13">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="ss">:partial</span><span class="p">,</span><span class="w"> </span><span class="n">progress</span><span class="p" data-group-id="6376843127-13">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">json</span><span class="p" data-group-id="6376843127-14">(</span><span class="n">conn</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6376843127-15">%{</span><span class="ss">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;uploading&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">progress</span><span class="p">:</span><span class="w"> </span><span class="n">progress</span><span class="p" data-group-id="6376843127-15">}</span><span class="p" data-group-id="6376843127-14">)</span><span class="w">
+    </span><span class="p" data-group-id="6376843127-16">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="n">reason</span><span class="p" data-group-id="6376843127-16">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">json</span><span class="p" data-group-id="6376843127-17">(</span><span class="n">conn</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">put_status</span><span class="p" data-group-id="6376843127-18">(</span><span class="mi">400</span><span class="p" data-group-id="6376843127-18">)</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6376843127-19">%{</span><span class="ss">error</span><span class="p">:</span><span class="w"> </span><span class="n">reason</span><span class="p" data-group-id="6376843127-19">}</span><span class="p" data-group-id="6376843127-17">)</span><span class="w">
+  </span><span class="k" data-group-id="6376843127-9">end</span><span class="w">
+</span><span class="k" data-group-id="6376843127-7">end</span></code></pre><h2 id="module-features" class="section-heading"><a href="#module-features" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Features</span></h2><ul><li><strong>Streaming</strong>: Never loads full file into memory, streams directly to disk</li><li><strong>Resumable</strong>: Client can resume interrupted uploads</li><li><strong>Progress</strong>: Track upload progress per chunk</li><li><strong>Integrity</strong>: SHA256 checksum verification</li><li><strong>Cleanup</strong>: Automatic cleanup of stale partial uploads</li></ul>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cleanup_stale/2" data-no-tooltip="" translate="no">cleanup_stale(upload_dir, max_age_seconds \\ 86400)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Clean up stale partial uploads older than <code class="inline">max_age</code> seconds.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#receive/2" data-no-tooltip="" translate="no">receive(conn, opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Receive a file upload by streaming the body directly to disk.
+Never loads the entire file into memory.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#receive_chunk/2" data-no-tooltip="" translate="no">receive_chunk(conn, opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Receive a chunk of a resumable upload.
+Returns <code class="inline">{:ok, :complete, file_info}</code> when all chunks received,
+or <code class="inline">{:ok, :partial, progress}</code> when more chunks expected.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="cleanup_stale/2">
+
+    <span id="cleanup_stale/1"></span>
+
+  <div class="detail-header">
+    <a href="#cleanup_stale/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cleanup_stale(upload_dir, max_age_seconds \\ 86400)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/chunked_upload.ex#L153" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Clean up stale partial uploads older than <code class="inline">max_age</code> seconds.</p>
+  </section>
+</section>
+<section class="detail" id="receive/2">
+
+    <span id="receive/1"></span>
+
+  <div class="detail-header">
+    <a href="#receive/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">receive(conn, opts \\ [])</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/chunked_upload.ex#L52" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Receive a file upload by streaming the body directly to disk.
+Never loads the entire file into memory.</p>
+  </section>
+</section>
+<section class="detail" id="receive_chunk/2">
+
+    <span id="receive_chunk/1"></span>
+
+  <div class="detail-header">
+    <a href="#receive_chunk/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">receive_chunk(conn, opts \\ [])</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/chunked_upload.ex#L89" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Receive a chunk of a resumable upload.
+Returns <code class="inline">{:ok, :complete, file_info}</code> when all chunks received,
+or <code class="inline">{:ok, :partial, progress}</code> when more chunks expected.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/hibana/0.1.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/hibana/0.1.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Hibana.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

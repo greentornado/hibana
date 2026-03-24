@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Hibana Plugins v0.1.0">
+
+
+    <title>API Reference — Hibana Plugins v0.1.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-F9C7532E.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Hibana Plugins
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-extra" id="main" data-type="extras">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Hibana Plugins</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>API Reference <small class="app-vsn">Hibana Plugins v#0.1.0</small></h1>
+<a href="api-reference.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+      <a href="https://github.com/greentornado/hibana" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+    <section class="details-list">
+      <h2 id="modules" class="section-heading">Modules</h2>
+      <div class="summary">
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.APIKey.html" translate="no">Hibana.<wbr>Plugins.<wbr>APIKey</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>API key authentication plugin. Supports header, query param, or bearer token.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.APIVersioning.html" translate="no">Hibana.<wbr>Plugins.<wbr>APIVersioning</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>API Versioning plugin for versioned REST APIs.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Admin.html" translate="no">Hibana.<wbr>Plugins.<wbr>Admin</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Auto-generated CRUD admin dashboard with Ant Design theme.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Auth.html" translate="no">Hibana.<wbr>Plugins.<wbr>Auth</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>HTTP Basic authentication plugin.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.BodyParser.html" translate="no">Hibana.<wbr>Plugins.<wbr>BodyParser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Request body parser for JSON and form data.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.CORS.html" translate="no">Hibana.<wbr>Plugins.<wbr>CORS</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>CORS (Cross-Origin Resource Sharing) plugin for Hibana.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Cache.html" translate="no">Hibana.<wbr>Plugins.<wbr>Cache</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ETS-based caching plugin with TTL and automatic expiration.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.ColorLogger.html" translate="no">Hibana.<wbr>Plugins.<wbr>ColorLogger</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pretty-printed colored request logger with timing breakdown.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Compression.html" translate="no">Hibana.<wbr>Plugins.<wbr>Compression</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Response compression plugin supporting gzip and deflate.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.ContentNegotiation.html" translate="no">Hibana.<wbr>Plugins.<wbr>ContentNegotiation</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Content Negotiation plugin for format selection (JSON/XML/CSV/etc).</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.DevErrorPage.html" translate="no">Hibana.<wbr>Plugins.<wbr>DevErrorPage</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Rich error pages for development with stack traces, request info, and code context.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.DistributedRateLimiter.html" translate="no">Hibana.<wbr>Plugins.<wbr>DistributedRateLimiter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Distributed rate limiter that works across cluster nodes.
+Uses the Cluster module for cross-node counter synchronization.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.ErrorHandler.html" translate="no">Hibana.<wbr>Plugins.<wbr>ErrorHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Custom error handler plugin for HTTP errors.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.GracefulShutdown.html" translate="no">Hibana.<wbr>Plugins.<wbr>GracefulShutdown</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Graceful shutdown plugin for zero-downtime deployments.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.GraphQL.html" translate="no">Hibana.<wbr>Plugins.<wbr>GraphQL</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL plugin for query resolution and playground.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.HealthCheck.html" translate="no">Hibana.<wbr>Plugins.<wbr>HealthCheck</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Health check endpoint plugin for load balancers and orchestration.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.I18n.html" translate="no">Hibana.<wbr>Plugins.<wbr>I18n</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Built-in internationalization with locale detection from Accept-Language header,
+translation storage, and interpolation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.JWT.html" translate="no">Hibana.<wbr>Plugins.<wbr>JWT</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>JWT (JSON Web Token) authentication plugin.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.LiveDashboard.html" translate="no">Hibana.<wbr>Plugins.<wbr>LiveDashboard</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>System dashboard plugin for Hibana, similar to Phoenix LiveDashboard.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.LiveView.html" translate="no">Hibana.<wbr>Plugins.<wbr>LiveView</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>LiveView channel plugin for real-time WebSocket connections.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Logger.html" translate="no">Hibana.<wbr>Plugins.<wbr>Logger</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Request/Response logger plugin.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Metrics.html" translate="no">Hibana.<wbr>Plugins.<wbr>Metrics</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Metrics and Telemetry plugin for monitoring and observability.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.OAuth.html" translate="no">Hibana.<wbr>Plugins.<wbr>OAuth</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>OAuth 2.0 authorization plugin supporting multiple providers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.OTPCache.html" translate="no">Hibana.<wbr>Plugins.<wbr>OTPCache</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>OTP-based in-memory cache plugin.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.RateLimiter.html" translate="no">Hibana.<wbr>Plugins.<wbr>RateLimiter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Rate limiting plugin using token bucket algorithm.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.RateLimiter.State.html" translate="no">Hibana.<wbr>Plugins.<wbr>RateLimiter.<wbr>State</a>
+
+  </div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.RequestId.html" translate="no">Hibana.<wbr>Plugins.<wbr>RequestId</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Request ID and tracing plugin for debugging and log correlation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.RequestSigning.html" translate="no">Hibana.<wbr>Plugins.<wbr>RequestSigning</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>HMAC request signing plugin for API-to-API authentication.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.SEO.html" translate="no">Hibana.<wbr>Plugins.<wbr>SEO</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Comprehensive SEO plugin for Hibana.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.ScopedCORS.html" translate="no">Hibana.<wbr>Plugins.<wbr>ScopedCORS</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Per-route CORS configuration. Apply different CORS rules to different route groups.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Search.html" translate="no">Hibana.<wbr>Plugins.<wbr>Search</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Meilisearch search plugin for Hibana.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Session.html" translate="no">Hibana.<wbr>Plugins.<wbr>Session</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Session management plugin using encrypted cookies.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Static.html" translate="no">Hibana.<wbr>Plugins.<wbr>Static</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Static file serving plugin for serving files from disk.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.TOTP.html" translate="no">Hibana.<wbr>Plugins.<wbr>TOTP</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Two-factor authentication with TOTP (RFC 6238) and HOTP (RFC 4226).
+Compatible with Google Authenticator and similar apps.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.TelemetryDashboard.html" translate="no">Hibana.<wbr>Plugins.<wbr>TelemetryDashboard</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Built-in telemetry dashboard showing live metrics via an HTML page.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Hibana.Plugins.Upload.html" translate="no">Hibana.<wbr>Plugins.<wbr>Upload</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>File upload handling plugin.</p></div>
+
+</div>
+
+      </div>
+    </section>
+
+
+</div>
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/hibana_plugins/0.1.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/hibana_plugins/0.1.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Hibana Plugins.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

@@ -1,10 +1,13 @@
 defmodule Hibana.Generator.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+  @source_url "https://github.com/greentornado/hibana"
+
   def project do
     [
       app: :hibana_generator,
-      version: "0.1.0",
+      version: @version,
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       lockfile: "../../mix.lock",
@@ -12,7 +15,11 @@ defmodule Hibana.Generator.MixProject do
       elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      aliases: [gen: "run lib/mix/tasks/gen/app.ex"]
+      description: description(),
+      package: package(),
+      docs: docs(),
+      name: "Hibana Generator",
+      source_url: @source_url
     ]
   end
 
@@ -22,9 +29,31 @@ defmodule Hibana.Generator.MixProject do
     ]
   end
 
+  defp description do
+    "Mix tasks and project generator for the Hibana web framework."
+  end
+
+  defp package do
+    [
+      name: "hibana_generator",
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url},
+      files: ~w(lib mix.exs)
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      source_ref: "v#{@version}",
+      source_url: @source_url
+    ]
+  end
+
   defp deps do
     [
-      {:hibana, in_umbrella: true}
+      {:hibana, in_umbrella: true},
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end
 end

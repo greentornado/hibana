@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="Hibana Plugins v0.1.0">
+
+
+    <title>Hibana.Plugins.OAuth — Hibana Plugins v0.1.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-F9C7532E.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+Hibana Plugins
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of Hibana Plugins</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">Hibana.<wbr>Plugins.<wbr>OAuth</span> 
+      <small class="app-vsn" translate="no">(Hibana Plugins v0.1.0)</small>
+
+    </h1>
+
+<a href="Hibana.Plugins.OAuth.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+
+      <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/plugins/oauth.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>OAuth 2.0 authorization plugin supporting multiple providers.</p><h2 id="module-supported-providers" class="section-heading"><a href="#module-supported-providers" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Supported Providers</span></h2><ul><li>Google OAuth 2.0</li><li>GitHub OAuth</li><li>Facebook OAuth</li></ul><h2 id="module-usage" class="section-heading"><a href="#module-usage" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Usage</span></h2><pre><code class="makeup elixir" translate="no"><span class="c1"># Google OAuth</span><span class="w">
+</span><span class="n">plug</span><span class="w"> </span><span class="nc">Hibana.Plugins.OAuth</span><span class="p">,</span><span class="w">
+  </span><span class="ss">provider</span><span class="p">:</span><span class="w"> </span><span class="ss">:google</span><span class="p">,</span><span class="w">
+  </span><span class="ss">client_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your_client_id&quot;</span><span class="p">,</span><span class="w">
+  </span><span class="ss">client_secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your_client_secret&quot;</span><span class="p">,</span><span class="w">
+  </span><span class="ss">redirect_uri</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://localhost:4000/auth/callback&quot;</span><span class="w">
+
+</span><span class="c1"># GitHub OAuth</span><span class="w">
+</span><span class="n">plug</span><span class="w"> </span><span class="nc">Hibana.Plugins.OAuth</span><span class="p">,</span><span class="w">
+  </span><span class="ss">provider</span><span class="p">:</span><span class="w"> </span><span class="ss">:github</span><span class="p">,</span><span class="w">
+  </span><span class="ss">client_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your_client_id&quot;</span><span class="p">,</span><span class="w">
+  </span><span class="ss">client_secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your_client_secret&quot;</span><span class="p">,</span><span class="w">
+  </span><span class="ss">redirect_uri</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://localhost:4000/auth/callback&quot;</span></code></pre><h2 id="module-routes" class="section-heading"><a href="#module-routes" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Routes</span></h2><p>The plugin handles these routes automatically:</p><ul><li><code class="inline">GET /auth/login</code> - Initiates OAuth flow</li><li><code class="inline">GET /auth/callback</code> - Handles OAuth callback</li></ul><h2 id="module-flow" class="section-heading"><a href="#module-flow" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Flow</span></h2><ol><li>User visits <code class="inline">/auth/login</code></li><li>Redirected to provider's authorization page</li><li>User grants permission</li><li>Redirect back to <code class="inline">/auth/callback</code></li><li>Plugin exchanges code for token</li><li>Fetches user info from provider</li><li>Generates JWT and sets cookie</li><li>Redirects to <code class="inline">/</code></li></ol><h2 id="module-options" class="section-heading"><a href="#module-options" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Options</span></h2><ul><li><code class="inline">:provider</code> - OAuth provider (<code class="inline">:google</code>, <code class="inline">:github</code>, <code class="inline">:facebook</code>)</li><li><code class="inline">:client_id</code> - OAuth client ID</li><li><code class="inline">:client_secret</code> - OAuth client secret</li><li><code class="inline">:redirect_uri</code> - Callback URL</li><li><code class="inline">:scope</code> - OAuth scope (optional, uses provider defaults)</li><li><code class="inline">:jwt_secret</code> - Secret for generated JWT (required)</li></ul><h2 id="module-module-functions" class="section-heading"><a href="#module-module-functions" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Module Functions</span></h2><h3 id="module-authorization_url-2" class="section-heading"><a href="#module-authorization_url-2" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">authorization_url/2</span></h3><p>Generate authorization URL:</p><pre><code class="makeup elixir" translate="no"><span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Hibana.Plugins.OAuth</span><span class="o">.</span><span class="n">authorization_url</span><span class="p" data-group-id="7015472566-1">(</span><span class="ss">:google</span><span class="p">,</span><span class="w"> </span><span class="ss">client_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">redirect_uri</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p" data-group-id="7015472566-1">)</span></code></pre><h3 id="module-exchange_token-2" class="section-heading"><a href="#module-exchange_token-2" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">exchange_token/2</span></h3><p>Exchange authorization code for access token:</p><pre><code class="makeup elixir" translate="no"><span class="p" data-group-id="9556889616-1">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">token_data</span><span class="p" data-group-id="9556889616-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Hibana.Plugins.OAuth</span><span class="o">.</span><span class="n">exchange_token</span><span class="p" data-group-id="9556889616-2">(</span><span class="n">code</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p" data-group-id="9556889616-2">)</span></code></pre><h3 id="module-fetch_user-2" class="section-heading"><a href="#module-fetch_user-2" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">fetch_user/2</span></h3><p>Fetch user profile from provider:</p><pre><code class="makeup elixir" translate="no"><span class="p" data-group-id="8507256358-1">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">user</span><span class="p" data-group-id="8507256358-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Hibana.Plugins.OAuth</span><span class="o">.</span><span class="n">fetch_user</span><span class="p" data-group-id="8507256358-2">(</span><span class="n">access_token</span><span class="p">,</span><span class="w"> </span><span class="n">user_url</span><span class="p" data-group-id="8507256358-2">)</span></code></pre>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h2>
+<div class="summary-functions summary">
+  <h3>
+    <a href="#functions">Functions</a>
+  </h3>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#before_send/2" data-no-tooltip="" translate="no">before_send(conn, opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/hibana/0.1.0/Hibana.Plugin.html#c:before_send/2"><code class="inline">Hibana.Plugin.before_send/2</code></a>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#exchange_token/2" data-no-tooltip="" translate="no">exchange_token(code, config)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Exchange authorization code for access token.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#fetch_user/2" data-no-tooltip="" translate="no">fetch_user(access_token, user_url)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Fetch user profile from provider.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_authorization_url/2" data-no-tooltip="" translate="no">generate_authorization_url(provider, config)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Generate OAuth authorization URL for a provider.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#redirect/2" data-no-tooltip="" translate="no">redirect(conn, list)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#start_link/1" data-no-tooltip="" translate="no">start_link(opts)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/hibana/0.1.0/Hibana.Plugin.html#c:start_link/1"><code class="inline">Hibana.Plugin.start_link/1</code></a>.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h2 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h2>
+
+    <div class="functions-list">
+<section class="detail" id="before_send/2">
+
+  <div class="detail-header">
+    <a href="#before_send/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">before_send(conn, opts)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/plugins/oauth.ex#L72" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/hibana/0.1.0/Hibana.Plugin.html#c:before_send/2"><code class="inline">Hibana.Plugin.before_send/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="exchange_token/2">
+
+  <div class="detail-header">
+    <a href="#exchange_token/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">exchange_token(code, config)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/plugins/oauth.ex#L311" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Exchange authorization code for access token.</p>
+  </section>
+</section>
+<section class="detail" id="fetch_user/2">
+
+  <div class="detail-header">
+    <a href="#fetch_user/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">fetch_user(access_token, user_url)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/plugins/oauth.ex#L333" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Fetch user profile from provider.</p>
+  </section>
+</section>
+<section class="detail" id="generate_authorization_url/2">
+
+  <div class="detail-header">
+    <a href="#generate_authorization_url/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">generate_authorization_url(provider, config)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/plugins/oauth.ex#L293" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Generate OAuth authorization URL for a provider.</p>
+  </section>
+</section>
+<section class="detail" id="redirect/2">
+
+  <div class="detail-header">
+    <a href="#redirect/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">redirect(conn, list)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/plugins/oauth.ex#L76" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="start_link/1">
+
+  <div class="detail-header">
+    <a href="#start_link/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">start_link(opts)</h1>
+
+
+        <a href="https://github.com/greentornado/hibana/blob/v0.1.0/lib/hibana/plugins/oauth.ex#L72" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/hibana/0.1.0/Hibana.Plugin.html#c:start_link/1"><code class="inline">Hibana.Plugin.start_link/1</code></a>.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/hibana_plugins/0.1.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/hibana_plugins/0.1.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="Hibana Plugins.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

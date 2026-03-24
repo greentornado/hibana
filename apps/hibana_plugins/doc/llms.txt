@@ -1,0 +1,56 @@
+# Hibana Plugins v0.1.0 - Table of Contents
+
+35 built-in plugins for the Hibana web framework: JWT, OAuth, CORS, rate limiting, GraphQL, admin dashboard, i18n, and more.
+
+## Modules
+
+- [Hibana.Plugins.LiveView](Hibana.Plugins.LiveView.md): LiveView channel plugin for real-time WebSocket connections.
+- [Hibana.Plugins.RateLimiter.State](Hibana.Plugins.RateLimiter.State.md)
+
+- Security &amp; Auth
+  - [Hibana.Plugins.APIKey](Hibana.Plugins.APIKey.md): API key authentication plugin. Supports header, query param, or bearer token.
+  - [Hibana.Plugins.Auth](Hibana.Plugins.Auth.md): HTTP Basic authentication plugin.
+  - [Hibana.Plugins.CORS](Hibana.Plugins.CORS.md): CORS (Cross-Origin Resource Sharing) plugin for Hibana.
+  - [Hibana.Plugins.DistributedRateLimiter](Hibana.Plugins.DistributedRateLimiter.md): Distributed rate limiter that works across cluster nodes.
+Uses the Cluster module for cross-node counter synchronization.
+  - [Hibana.Plugins.JWT](Hibana.Plugins.JWT.md): JWT (JSON Web Token) authentication plugin.
+  - [Hibana.Plugins.OAuth](Hibana.Plugins.OAuth.md): OAuth 2.0 authorization plugin supporting multiple providers.
+  - [Hibana.Plugins.RateLimiter](Hibana.Plugins.RateLimiter.md): Rate limiting plugin using token bucket algorithm.
+  - [Hibana.Plugins.RequestSigning](Hibana.Plugins.RequestSigning.md): HMAC request signing plugin for API-to-API authentication.
+  - [Hibana.Plugins.ScopedCORS](Hibana.Plugins.ScopedCORS.md): Per-route CORS configuration. Apply different CORS rules to different route groups.
+  - [Hibana.Plugins.TOTP](Hibana.Plugins.TOTP.md): Two-factor authentication with TOTP (RFC 6238) and HOTP (RFC 4226).
+Compatible with Google Authenticator and similar apps.
+
+- Request Processing
+  - [Hibana.Plugins.APIVersioning](Hibana.Plugins.APIVersioning.md): API Versioning plugin for versioned REST APIs.
+  - [Hibana.Plugins.BodyParser](Hibana.Plugins.BodyParser.md): Request body parser for JSON and form data.
+  - [Hibana.Plugins.Compression](Hibana.Plugins.Compression.md): Response compression plugin supporting gzip and deflate.
+  - [Hibana.Plugins.ContentNegotiation](Hibana.Plugins.ContentNegotiation.md): Content Negotiation plugin for format selection (JSON/XML/CSV/etc).
+  - [Hibana.Plugins.I18n](Hibana.Plugins.I18n.md): Built-in internationalization with locale detection from Accept-Language header,
+translation storage, and interpolation.
+  - [Hibana.Plugins.RequestId](Hibana.Plugins.RequestId.md): Request ID and tracing plugin for debugging and log correlation.
+  - [Hibana.Plugins.Session](Hibana.Plugins.Session.md): Session management plugin using encrypted cookies.
+
+- Monitoring &amp; Ops
+  - [Hibana.Plugins.ColorLogger](Hibana.Plugins.ColorLogger.md): Pretty-printed colored request logger with timing breakdown.
+  - [Hibana.Plugins.GracefulShutdown](Hibana.Plugins.GracefulShutdown.md): Graceful shutdown plugin for zero-downtime deployments.
+  - [Hibana.Plugins.HealthCheck](Hibana.Plugins.HealthCheck.md): Health check endpoint plugin for load balancers and orchestration.
+  - [Hibana.Plugins.LiveDashboard](Hibana.Plugins.LiveDashboard.md): System dashboard plugin for Hibana, similar to Phoenix LiveDashboard.
+  - [Hibana.Plugins.Logger](Hibana.Plugins.Logger.md): Request/Response logger plugin.
+  - [Hibana.Plugins.Metrics](Hibana.Plugins.Metrics.md): Metrics and Telemetry plugin for monitoring and observability.
+  - [Hibana.Plugins.TelemetryDashboard](Hibana.Plugins.TelemetryDashboard.md): Built-in telemetry dashboard showing live metrics via an HTML page.
+
+- Data &amp; Content
+  - [Hibana.Plugins.Cache](Hibana.Plugins.Cache.md): ETS-based caching plugin with TTL and automatic expiration.
+  - [Hibana.Plugins.GraphQL](Hibana.Plugins.GraphQL.md): GraphQL plugin for query resolution and playground.
+  - [Hibana.Plugins.OTPCache](Hibana.Plugins.OTPCache.md): OTP-based in-memory cache plugin.
+  - [Hibana.Plugins.SEO](Hibana.Plugins.SEO.md): Comprehensive SEO plugin for Hibana.
+  - [Hibana.Plugins.Search](Hibana.Plugins.Search.md): Meilisearch search plugin for Hibana.
+  - [Hibana.Plugins.Static](Hibana.Plugins.Static.md): Static file serving plugin for serving files from disk.
+  - [Hibana.Plugins.Upload](Hibana.Plugins.Upload.md): File upload handling plugin.
+
+- Development &amp; Admin
+  - [Hibana.Plugins.Admin](Hibana.Plugins.Admin.md): Auto-generated CRUD admin dashboard with Ant Design theme.
+  - [Hibana.Plugins.DevErrorPage](Hibana.Plugins.DevErrorPage.md): Rich error pages for development with stack traces, request info, and code context.
+  - [Hibana.Plugins.ErrorHandler](Hibana.Plugins.ErrorHandler.md): Custom error handler plugin for HTTP errors.
+
