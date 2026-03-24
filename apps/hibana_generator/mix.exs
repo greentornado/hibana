@@ -38,13 +38,13 @@ defmodule Hibana.Generator.MixProject do
       name: "hibana_generator",
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
-      files: ~w(lib mix.exs)
+      files: ~w(lib mix.exs LICENSE)
     ]
   end
 
   defp docs do
     [
-      main: "readme",
+      main: "Mix.Tasks.Gen.App",
       source_ref: "v#{@version}",
       source_url: @source_url
     ]
@@ -52,8 +52,16 @@ defmodule Hibana.Generator.MixProject do
 
   defp deps do
     [
-      {:hibana, in_umbrella: true},
+      hibana_dep(),
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
+  end
+
+  defp hibana_dep do
+    if File.exists?(Path.expand("../../apps/hibana/mix.exs", __DIR__)) do
+      {:hibana, in_umbrella: true}
+    else
+      {:hibana, "~> #{@version}"}
+    end
   end
 end

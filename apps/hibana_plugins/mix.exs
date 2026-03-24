@@ -39,7 +39,7 @@ defmodule Hibana.Plugins.MixProject do
       name: "hibana_plugins",
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
-      files: ~w(lib .formatter.exs mix.exs)
+      files: ~w(lib .formatter.exs mix.exs LICENSE)
     ]
   end
 
@@ -100,7 +100,7 @@ defmodule Hibana.Plugins.MixProject do
 
   defp deps do
     [
-      {:hibana, in_umbrella: true},
+      hibana_dep(),
       {:plug, "~> 1.16"},
       {:jose, "~> 1.11"},
       {:hackney, "~> 3.2"},
@@ -111,5 +111,13 @@ defmodule Hibana.Plugins.MixProject do
       {:mime, "~> 2.0"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
+  end
+
+  defp hibana_dep do
+    if File.exists?(Path.expand("../../apps/hibana/mix.exs", __DIR__)) do
+      {:hibana, in_umbrella: true}
+    else
+      {:hibana, "~> #{@version}"}
+    end
   end
 end

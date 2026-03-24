@@ -38,7 +38,7 @@ defmodule Hibana.Ecto.MixProject do
       name: "hibana_ecto",
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
-      files: ~w(lib mix.exs)
+      files: ~w(lib mix.exs LICENSE)
     ]
   end
 
@@ -52,7 +52,7 @@ defmodule Hibana.Ecto.MixProject do
 
   defp deps do
     [
-      {:hibana, in_umbrella: true},
+      hibana_dep(),
       {:ecto, "~> 3.12"},
       {:ecto_sql, "~> 3.12"},
       {:myxql, "~> 0.7"},
@@ -61,5 +61,13 @@ defmodule Hibana.Ecto.MixProject do
       {:jason, "~> 1.4"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
+  end
+
+  defp hibana_dep do
+    if File.exists?(Path.expand("../../apps/hibana/mix.exs", __DIR__)) do
+      {:hibana, in_umbrella: true}
+    else
+      {:hibana, "~> #{@version}"}
+    end
   end
 end
