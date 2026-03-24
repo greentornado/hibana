@@ -5,13 +5,9 @@ defmodule Hibana.Ecto.MixProject do
   @source_url "https://github.com/greentornado/hibana"
 
   def project do
-    [
+    base = [
       app: :hibana_ecto,
       version: @version,
-      build_path: "../../_build",
-      config_path: "../../config/config.exs",
-      lockfile: "../../mix.lock",
-      deps_path: "../../deps",
       elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -21,6 +17,17 @@ defmodule Hibana.Ecto.MixProject do
       name: "Hibana Ecto",
       source_url: @source_url
     ]
+
+    if System.get_env("HEX_PUBLISH") do
+      base
+    else
+      Keyword.merge(base,
+        build_path: "../../_build",
+        config_path: "../../config/config.exs",
+        deps_path: "../../deps",
+        lockfile: "../../mix.lock"
+      )
+    end
   end
 
   def application do
