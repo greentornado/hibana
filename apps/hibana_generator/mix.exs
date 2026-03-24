@@ -58,10 +58,10 @@ defmodule Hibana.Generator.MixProject do
   end
 
   defp hibana_dep do
-    if File.exists?(Path.expand("../../apps/hibana/mix.exs", __DIR__)) do
-      {:hibana, in_umbrella: true}
-    else
+    if System.get_env("HEX_PUBLISH") do
       {:hibana, "~> #{@version}"}
+    else
+      {:hibana, in_umbrella: true}
     end
   end
 end
