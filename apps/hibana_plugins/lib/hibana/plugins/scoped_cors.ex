@@ -63,7 +63,34 @@ defmodule Hibana.Plugins.ScopedCORS do
     end
   end
 
-  @doc "Apply CORS headers to a connection with given options"
+  @doc """
+  Applies CORS headers to a connection with the given options.
+
+  Can be called directly in a controller for per-route CORS configuration.
+
+  ## Parameters
+
+    - `conn` - The connection struct
+    - `opts` - CORS keyword options:
+      - `:origins` - List of allowed origins (default: `["*"]`)
+      - `:methods` - List of allowed methods
+      - `:headers` - List of allowed headers
+      - `:credentials` - Whether to allow credentials (default: `false`)
+      - `:max_age` - Preflight cache duration in seconds (default: `86400`)
+
+  ## Returns
+
+  The connection with CORS headers set.
+
+  ## Examples
+
+      ```elixir
+      conn = Hibana.Plugins.ScopedCORS.apply(conn,
+        origins: ["https://app.example.com"],
+        credentials: true
+      )
+      ```
+  """
   def apply(conn, opts) do
     origin = get_req_header(conn, "origin") |> List.first() || "*"
     apply_cors(conn, origin, opts)

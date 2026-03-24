@@ -18,6 +18,20 @@ defmodule Mix.Tasks.Gen.Migration do
       mix gen.migration create_posts title:string body:text published:boolean
   """
 
+  @doc """
+  Runs the migration generator.
+
+  ## Parameters
+
+    - `args` - Command-line arguments: `[name, field:type, ...]`
+
+  ## Examples
+
+      ```
+      mix gen.migration create_users
+      mix gen.migration add_email_to_users email:string
+      ```
+  """
   @impl true
   def run(args) do
     case OptionParser.parse(args, switches: []) do

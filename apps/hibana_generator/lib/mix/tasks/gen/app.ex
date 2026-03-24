@@ -27,6 +27,20 @@ defmodule Mix.Tasks.Gen.App do
       mix gen.app ~/projects/my_app
   """
 
+  @doc """
+  Runs the application generator.
+
+  ## Parameters
+
+    - `args` - Command-line arguments: `[app_name_or_path, ...options]`
+
+  ## Examples
+
+      ```
+      mix gen.app my_app
+      mix gen.app ~/projects/my_app --skip-git
+      ```
+  """
   @impl true
   def run(args) do
     {opts, args, _} =

@@ -55,6 +55,25 @@ defmodule Hibana.OTPCache do
 
   use GenServer
 
+  @doc """
+  Starts the OTP cache GenServer.
+
+  ## Parameters
+
+    - `opts` - Keyword list of options:
+      - `:name` - The server name (default: `Hibana.OTPCache`)
+      - `:max_size` - Maximum number of entries before eviction (default: `1000`)
+
+  ## Returns
+
+    - `{:ok, pid}` on success
+
+  ## Examples
+
+      ```elixir
+      {:ok, _pid} = Hibana.OTPCache.start_link(name: :my_cache, max_size: 5000)
+      ```
+  """
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
     max_size = Keyword.get(opts, :max_size, 1000)
@@ -67,7 +86,28 @@ defmodule Hibana.OTPCache do
   end
 
   @doc """
-  Put a value into cache with optional TTL (in milliseconds).
+  Puts a value into the cache with an optional TTL (time-to-live).
+
+  If the cache has reached `max_size`, the oldest entry is evicted.
+
+  ## Parameters
+
+    - `server` - The cache server name (default: `Hibana.OTPCache`)
+    - `key` - The cache key (any term)
+    - `value` - The value to store
+    - `opts` - Options:
+      - `:ttl` - Time-to-live in milliseconds; `nil` means no expiry
+
+  ## Returns
+
+  `:ok`
+
+  ## Examples
+
+      ```elixir
+      Hibana.OTPCache.put(:my_cache, "user:1", user_data, ttl: 60_000)
+      Hibana.OTPCache.put(:my_cache, "config", config)
+      ```
   """
   def put(server \\ __MODULE__, key, value, opts \\ []) do
     ttl = Keyword.get(opts, :ttl)
@@ -77,14 +117,60 @@ defmodule Hibana.OTPCache do
   end
 
   @doc """
-  Get a value from cache.
+  Gets a value from the cache by key.
+
+  Returns `nil` if the key is not found or has expired (expired entries
+  are automatically removed on access).
+
+  ## Parameters
+
+    - `server` - The cache server name (default: `Hibana.OTPCache`)
+    - `key` - The cache key
+
+  ## Returns
+
+  The cached value, or `nil` if not found or expired.
+
+  ## Examples
+
+      ```elixir
+      Hibana.OTPCache.get(:my_cache, "user:1")
+      # => %{name: "Alice"}
+
+      Hibana.OTPCache.get(:my_cache, "missing")
+      # => nil
+      ```
   """
   def get(server \\ __MODULE__, key) do
     GenServer.call(server, {:get, key})
   end
 
   @doc """
-  Get a value or compute if not exists.
+  Gets a cached value or computes and caches it if not present.
+
+  Implements the cache-aside (lazy-loading) pattern. If the key exists
+  and is not expired, returns the cached value. Otherwise, calls
+  `compute_fn`, stores the result with the given TTL, and returns it.
+
+  ## Parameters
+
+    - `server` - The cache server name (default: `Hibana.OTPCache`)
+    - `key` - The cache key
+    - `compute_fn` - A zero-arity function to compute the value on cache miss
+    - `opts` - Options:
+      - `:ttl` - Time-to-live in milliseconds (default: `300_000`)
+
+  ## Returns
+
+    - `{:ok, value}` - The cached or computed value
+
+  ## Examples
+
+      ```elixir
+      {:ok, user} = Hibana.OTPCache.get_or_compute(:my_cache, "user:1", fn ->
+        Repo.get!(User, 1)
+      end, ttl: 300_000)
+      ```
   """
   def get_or_compute(server \\ __MODULE__, key, compute_fn, opts \\ []) do
     ttl = Keyword.get(opts, :ttl, 300_000)
@@ -101,35 +187,85 @@ defmodule Hibana.OTPCache do
   end
 
   @doc """
-  Delete a key from cache.
+  Deletes a key from the cache.
+
+  ## Parameters
+
+    - `server` - The cache server name (default: `Hibana.OTPCache`)
+    - `key` - The cache key to delete
+
+  ## Returns
+
+  `:ok`
   """
   def delete(server \\ __MODULE__, key) do
     GenServer.call(server, {:delete, key})
   end
 
   @doc """
-  Check if key exists and is not expired.
+  Checks if a key exists in the cache and is not expired.
+
+  ## Parameters
+
+    - `server` - The cache server name (default: `Hibana.OTPCache`)
+    - `key` - The cache key
+
+  ## Returns
+
+  `true` if the key exists and has not expired, `false` otherwise.
   """
   def exists?(server \\ __MODULE__, key) do
     GenServer.call(server, {:exists, key})
   end
 
   @doc """
-  Clear all cache entries.
+  Clears all entries from the cache.
+
+  ## Parameters
+
+    - `server` - The cache server name (default: `Hibana.OTPCache`)
+
+  ## Returns
+
+  `:ok`
   """
   def clear(server \\ __MODULE__) do
     GenServer.call(server, :clear)
   end
 
   @doc """
-  Get cache statistics.
+  Gets cache statistics including total entries, valid (non-expired) entries,
+  and maximum size.
+
+  ## Parameters
+
+    - `server` - The cache server name (default: `Hibana.OTPCache`)
+
+  ## Returns
+
+  A map with `:total`, `:valid`, and `:max_size` keys.
+
+  ## Examples
+
+      ```elixir
+      Hibana.OTPCache.stats(:my_cache)
+      # => %{total: 150, valid: 142, max_size: 1000}
+      ```
   """
   def stats(server \\ __MODULE__) do
     GenServer.call(server, :stats)
   end
 
   @doc """
-  Get all keys.
+  Gets all keys currently in the cache (including expired ones not yet cleaned up).
+
+  ## Parameters
+
+    - `server` - The cache server name (default: `Hibana.OTPCache`)
+
+  ## Returns
+
+  A list of cache keys.
   """
   def keys(server \\ __MODULE__) do
     GenServer.call(server, :keys)

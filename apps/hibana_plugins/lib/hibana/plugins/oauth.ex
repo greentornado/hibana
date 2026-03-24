@@ -73,6 +73,7 @@ defmodule Hibana.Plugins.OAuth do
   import Plug.Conn
   # JWT is used for signing tokens in handle_callback
 
+  @doc false
   def redirect(conn, to: url) do
     conn
     |> put_resp_header("location", url)
@@ -288,7 +289,25 @@ defmodule Hibana.Plugins.OAuth do
   end
 
   @doc """
-  Generate OAuth authorization URL for a provider.
+  Generates an OAuth authorization URL for the given provider.
+
+  ## Parameters
+
+    - `provider` - The OAuth provider atom (`:google`, `:github`, `:facebook`)
+    - `config` - A keyword list with `:client_id`, `:redirect_uri`, and optional `:scope`
+
+  ## Returns
+
+  A URL string to redirect the user to.
+
+  ## Examples
+
+      ```elixir
+      url = Hibana.Plugins.OAuth.generate_authorization_url(:github,
+        client_id: "abc123",
+        redirect_uri: "http://localhost:4000/auth/callback"
+      )
+      ```
   """
   def generate_authorization_url(provider, config) do
     provider_config = @providers[provider]
@@ -306,7 +325,17 @@ defmodule Hibana.Plugins.OAuth do
   end
 
   @doc """
-  Exchange authorization code for access token.
+  Exchanges an authorization code for an access token.
+
+  ## Parameters
+
+    - `code` - The authorization code from the OAuth callback
+    - `config` - A keyword list with `:client_id`, `:client_secret`, `:redirect_uri`, `:token_url`
+
+  ## Returns
+
+    - `{:ok, token_data}` on success
+    - `{:error, reason}` on failure
   """
   def exchange_token(code, config) do
     body =
@@ -328,7 +357,17 @@ defmodule Hibana.Plugins.OAuth do
   end
 
   @doc """
-  Fetch user profile from provider.
+  Fetches the user profile from the OAuth provider.
+
+  ## Parameters
+
+    - `access_token` - The OAuth access token
+    - `user_url` - The provider's user info endpoint URL
+
+  ## Returns
+
+    - `{:ok, user_map}` on success
+    - `{:error, reason}` on failure
   """
   def fetch_user(access_token, user_url) do
     headers = [{"Authorization", "Bearer #{access_token}"}]

@@ -47,7 +47,27 @@ defmodule Hibana.SSE do
   import Plug.Conn
 
   @doc """
-  Initialize an SSE connection with proper headers.
+  Initializes an SSE connection with proper headers and chunked encoding.
+
+  Sets `Content-Type: text/event-stream`, disables caching, and starts
+  chunked transfer encoding. Sends an initial `retry:` directive to the client.
+
+  ## Parameters
+
+    - `conn` - The `Plug.Conn` struct
+    - `opts` - Options:
+      - `:retry` - Client reconnection interval in milliseconds (default: `3000`)
+
+  ## Returns
+
+  The connection in chunked mode, ready for `send_event/4` calls.
+
+  ## Examples
+
+      ```elixir
+      conn = Hibana.SSE.init(conn)
+      conn = Hibana.SSE.init(conn, retry: 5000)
+      ```
   """
   def init(conn, opts \\ []) do
     retry = Keyword.get(opts, :retry, 3000)
@@ -62,7 +82,30 @@ defmodule Hibana.SSE do
   end
 
   @doc """
-  Send an SSE event with optional event type and id.
+  Sends an SSE event with a named event type and optional ID.
+
+  Formats the event according to the W3C SSE specification and sends
+  it as a chunk on the connection.
+
+  ## Parameters
+
+    - `conn` - The chunked connection (from `init/1`)
+    - `event_type` - The event name (e.g., `"message"`, `"update"`)
+    - `data` - The event payload (string or JSON-encodable term)
+    - `opts` - Options:
+      - `:id` - Optional event ID for client-side tracking
+
+  ## Returns
+
+    - `{:ok, conn}` on success
+    - `{:error, reason}` if the connection is closed
+
+  ## Examples
+
+      ```elixir
+      {:ok, conn} = Hibana.SSE.send_event(conn, "message", %{text: "Hello!"})
+      {:ok, conn} = Hibana.SSE.send_event(conn, "update", %{count: 42}, id: 1)
+      ```
   """
   def send_event(conn, event_type, data, opts \\ []) do
     id = Keyword.get(opts, :id)
@@ -84,7 +127,26 @@ defmodule Hibana.SSE do
   end
 
   @doc """
-  Send a data-only event (no event type).
+  Sends a data-only SSE event without an event type.
+
+  The client will receive this as a generic `message` event.
+
+  ## Parameters
+
+    - `conn` - The chunked connection (from `init/1`)
+    - `data` - The event payload (string or JSON-encodable term)
+
+  ## Returns
+
+    - `{:ok, conn}` on success
+    - `{:error, reason}` if the connection is closed
+
+  ## Examples
+
+      ```elixir
+      {:ok, conn} = Hibana.SSE.send_data(conn, %{status: "online"})
+      {:ok, conn} = Hibana.SSE.send_data(conn, "heartbeat")
+      ```
   """
   def send_data(conn, data) do
     encoded_data = if is_binary(data), do: data, else: Jason.encode!(data)
@@ -98,7 +160,27 @@ defmodule Hibana.SSE do
   end
 
   @doc """
-  Send a comment (keep-alive).
+  Sends an SSE comment line, typically used as a keep-alive signal.
+
+  Comments are prefixed with `:` and ignored by SSE clients but keep
+  the HTTP connection alive through proxies and load balancers.
+
+  ## Parameters
+
+    - `conn` - The chunked connection
+    - `comment` - Optional comment text (default: `""`)
+
+  ## Returns
+
+    - `{:ok, conn}` on success
+    - `{:error, :closed}` if the connection is closed
+
+  ## Examples
+
+      ```elixir
+      {:ok, conn} = Hibana.SSE.send_comment(conn)
+      {:ok, conn} = Hibana.SSE.send_comment(conn, "keepalive")
+      ```
   """
   def send_comment(conn, comment \\ "") do
     case chunk(conn, ": #{comment}\n\n") do
@@ -108,8 +190,30 @@ defmodule Hibana.SSE do
   end
 
   @doc """
-  Stream events using a callback function.
-  The callback receives a send function that can be called to emit events.
+  Streams events using a callback function.
+
+  The callback receives a `send_fn` that can be called repeatedly to emit
+  SSE events. The function should block until streaming is complete.
+
+  ## Parameters
+
+    - `conn` - The chunked connection (from `init/1`)
+    - `fun` - A function that receives `send_fn.(event_type, data)` and streams events
+    - `_opts` - Reserved for future use
+
+  ## Returns
+
+  The connection after streaming.
+
+  ## Examples
+
+      ```elixir
+      Hibana.SSE.stream(conn, fn send_fn ->
+        send_fn.("message", %{text: "Hello!"})
+        Process.sleep(1000)
+        send_fn.("message", %{text: "World!"})
+      end)
+      ```
   """
   def stream(conn, fun, _opts \\ []) do
     send_fn = fn event_type, data ->

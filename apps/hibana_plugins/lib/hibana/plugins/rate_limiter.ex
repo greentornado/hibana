@@ -86,7 +86,15 @@ defmodule Hibana.Plugins.RateLimiter do
     }
   end
 
-  @doc "Start the rate limiter ETS table"
+  @doc """
+  Creates the `:rate_limiter` ETS table if it does not already exist.
+
+  Call this at application startup to ensure the table is available.
+
+  ## Returns
+
+    - `{:ok, pid}` - The current process PID
+  """
   def start_link do
     ensure_table_exists()
     {:ok, self()}

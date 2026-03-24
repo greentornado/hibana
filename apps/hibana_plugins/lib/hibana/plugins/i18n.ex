@@ -55,6 +55,32 @@ defmodule Hibana.Plugins.I18n do
     assign(conn, :locale, locale)
   end
 
+  @doc """
+  Translates a key for the given locale with optional interpolation bindings.
+
+  Falls back to the `"en"` locale if the key is not found in the requested
+  locale. Returns the key itself if no translation exists.
+
+  ## Parameters
+
+    - `locale` - The locale string (e.g., `"en"`, `"vi"`, `"ja"`)
+    - `key` - The translation key string
+    - `bindings` - Keyword list of interpolation values (default: `[]`)
+
+  ## Returns
+
+  The translated and interpolated string.
+
+  ## Examples
+
+      ```elixir
+      Hibana.Plugins.I18n.t("en", "hello", name: "Alice")
+      # => "Hello, Alice!"
+
+      Hibana.Plugins.I18n.t("vi", "welcome")
+      # => "Chao mung ban den voi ung dung"
+      ```
+  """
   def t(locale, key, bindings \\ []) do
     ensure_table()
 
@@ -70,6 +96,23 @@ defmodule Hibana.Plugins.I18n do
     end
   end
 
+  @doc """
+  Registers translations for a locale.
+
+  ## Parameters
+
+    - `locale` - The locale string (e.g., `"en"`)
+    - `translations` - A map of `%{key => translated_string}`
+
+  ## Examples
+
+      ```elixir
+      Hibana.Plugins.I18n.put_translations("en", %{
+        "hello" => "Hello, %{name}!",
+        "welcome" => "Welcome to our app"
+      })
+      ```
+  """
   def put_translations(locale, translations) when is_map(translations) do
     ensure_table()
 
@@ -78,6 +121,20 @@ defmodule Hibana.Plugins.I18n do
     end)
   end
 
+  @doc """
+  Returns a list of all locales that have translations registered.
+
+  ## Returns
+
+  A list of locale strings.
+
+  ## Examples
+
+      ```elixir
+      Hibana.Plugins.I18n.available_locales()
+      # => ["en", "vi", "ja"]
+      ```
+  """
   def available_locales do
     ensure_table()
 

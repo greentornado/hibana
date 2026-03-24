@@ -19,6 +19,13 @@ defmodule Mix.Tasks.Db.Rollback do
       mix db.rollback --step 2
   """
 
+  @doc """
+  Rolls back the last database migration(s).
+
+  ## Parameters
+
+    - `args` - Command-line arguments with optional `--repo`, `--step` flags
+  """
   @impl true
   def run(args) do
     {opts, _, _} =

@@ -12,6 +12,13 @@ defmodule Mix.Tasks.Db.Seed do
 
   @shortdoc "Run database seeds"
 
+  @doc """
+  Runs the database seed file.
+
+  ## Parameters
+
+    - `args` - Command-line arguments with optional `--file` flag
+  """
   @impl true
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, strict: [file: :string])

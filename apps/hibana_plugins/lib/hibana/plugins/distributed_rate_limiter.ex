@@ -104,6 +104,20 @@ defmodule Hibana.Plugins.DistributedRateLimiter do
     |> Enum.sum()
   end
 
+  @doc """
+  Returns the local request count for a key within the given time window.
+
+  Called via RPC from other cluster nodes to aggregate distributed counts.
+
+  ## Parameters
+
+    - `key` - The rate-limiting key
+    - `window` - The time window in milliseconds
+
+  ## Returns
+
+  An integer count of requests from this node.
+  """
   def local_count_for(key, window) do
     get_local_count(key, window)
   end

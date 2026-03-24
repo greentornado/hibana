@@ -78,6 +78,15 @@ defmodule Hibana.Plugins.Cache do
 
   @table :hibana_cache
 
+  @doc """
+  Creates the `:hibana_cache` ETS table for cache storage.
+
+  Must be called before using `get/1`, `set/2`, or other cache functions.
+
+  ## Returns
+
+    - `{:ok, pid}` - The current process PID
+  """
   def start_link do
     :ets.new(@table, [
       :named_table,

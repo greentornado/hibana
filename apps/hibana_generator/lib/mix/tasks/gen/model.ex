@@ -32,6 +32,20 @@ defmodule Mix.Tasks.Gen.Model do
       mix gen.model Post title:string body:text published:boolean
   """
 
+  @doc """
+  Runs the model generator.
+
+  ## Parameters
+
+    - `args` - Command-line arguments: `[name, field:type, ...options]`
+
+  ## Examples
+
+      ```
+      mix gen.model User name:string email:unique
+      mix gen.model Post title:string body:text published:boolean
+      ```
+  """
   @impl true
   def run(args) do
     {opts, [name | field_args], _} =

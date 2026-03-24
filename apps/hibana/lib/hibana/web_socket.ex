@@ -1,6 +1,17 @@
 defmodule Hibana.WebSocket do
   @moduledoc """
-  WebSocket handler behavior for Hibana.
+  WebSocket handler behaviour for Hibana.
+
+  Provides a behaviour with callbacks for handling WebSocket connections,
+  messages, and disconnections. Uses Cowboy's native WebSocket support
+  for microsecond-level latency.
+
+  ## Features
+
+  - Direct Cowboy WebSocket integration with zero middleware overhead
+  - Text and binary message handling
+  - Process message forwarding via `handle_info/2`
+  - Automatic connection/disconnection lifecycle management
 
   ## Usage
 
@@ -25,6 +36,27 @@ defmodule Hibana.WebSocket do
       def websocket(conn) do
         Hibana.WebSocket.upgrade(conn, MyApp.ChatSocket)
       end
+
+  ## Callbacks
+
+  | Callback | Description |
+  |----------|-------------|
+  | `init/2` | Called on connection upgrade |
+  | `handle_connect/2` | Called after WebSocket handshake |
+  | `handle_in/2` | Called for text messages |
+  | `handle_binary/2` | Called for binary messages |
+  | `handle_info/2` | Called for Erlang process messages |
+  | `handle_disconnect/2` | Called on connection close |
+
+  ## Return Values
+
+  Callbacks return tuples:
+
+  - `{:ok, state}` - Continue with updated state
+  - `{:reply, {:text, data}, state}` - Send a text frame
+  - `{:reply, {:binary, data}, state}` - Send a binary frame
+  - `{:push, {:text, data}, state}` - Push from `handle_info`
+  - `{:stop, state}` - Close the connection
   """
 
   alias Hibana.Endpoint
@@ -91,17 +123,48 @@ defmodule Hibana.WebSocket do
   end
 
   @doc """
-  Starts a WebSocket handler.
+  Starts a WebSocket handler via the Hibana endpoint.
+
+  ## Parameters
+
+    - `handler` - The WebSocket handler module
+    - `opts` - Options passed to the endpoint (default: `[]`)
+
+  ## Returns
+
+  The result of `Hibana.Endpoint.start_link/1`.
   """
   def start_link(handler, opts \\ []) do
     Endpoint.start_link(Keyword.merge(opts, handler: handler))
   end
 
   @doc """
-  Upgrades an HTTP connection to WebSocket.
+  Upgrades an HTTP connection to a WebSocket connection.
 
-  This initiates the Cowboy WebSocket upgrade handshake. The `handler` module
+  Initiates the Cowboy WebSocket upgrade handshake. The `handler` module
   must `use Hibana.WebSocket` and implement the required callbacks.
+
+  ## Parameters
+
+    - `conn` - The `Plug.Conn` struct from an HTTP request
+    - `handler` - The WebSocket handler module (must `use Hibana.WebSocket`)
+    - `handler_opts` - Options passed to the handler's `init/2` callback (default: `[]`)
+
+  ## Returns
+
+  The connection after initiating the WebSocket upgrade.
+
+  ## Examples
+
+      ```elixir
+      def websocket(conn) do
+        Hibana.WebSocket.upgrade(conn, MyApp.ChatSocket)
+      end
+
+      def websocket(conn) do
+        Hibana.WebSocket.upgrade(conn, MyApp.ChatSocket, room: "lobby")
+      end
+      ```
   """
   def upgrade(conn, handler, handler_opts \\ []) do
     conn

@@ -3,7 +3,16 @@ defmodule Hibana.CompiledRouter do
   High-performance compiled router that generates pattern-match function clauses at compile time.
 
   Routes are compiled into BEAM pattern matching, giving O(1) dispatch performance
-  regardless of the number of routes.
+  regardless of the number of routes. This is the recommended router for production
+  applications.
+
+  ## Features
+
+  - **O(1) dispatch** via Erlang VM native pattern matching
+  - Same DSL as `Hibana.Router.DSL` (`get/3`, `post/3`, etc.)
+  - Inline handler support with `do:` blocks
+  - Plug pipeline support
+  - Compile-time route validation
 
   ## Usage
 
@@ -25,12 +34,31 @@ defmodule Hibana.CompiledRouter do
         end
       end
 
-  Routes are compiled into pattern-match clauses like:
+  ## How It Works
 
-      def match("GET", ["users", id]) -> {:ok, UserController, :show, %{"id" => id}}
+  At compile time, routes are transformed into pattern-match function clauses:
 
-  This gives BEAM-native performance — the Erlang VM's pattern matching engine
-  handles dispatch with no list iteration or string comparison loops.
+      defp do_match("GET", ["users", id]) do
+        {:ok, UserController, :show, %{"id" => id}}
+      end
+
+  The Erlang VM's pattern matching engine handles dispatch with no list iteration
+  or string comparison loops, giving constant-time O(1) performance regardless of
+  the number of routes.
+
+  ## Route Macros
+
+  | Macro | HTTP Method |
+  |-------|-------------|
+  | `get/3` | GET |
+  | `post/3` | POST |
+  | `put/3` | PUT |
+  | `delete/3` | DELETE |
+  | `patch/3` | PATCH |
+  | `options/3` | OPTIONS |
+  | `head/3` | HEAD |
+
+  Plus `plug/1` and `plug/2` for middleware.
   """
 
   defmacro __using__(_opts) do

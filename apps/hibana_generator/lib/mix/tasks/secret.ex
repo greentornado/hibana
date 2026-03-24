@@ -20,6 +20,13 @@ defmodule Mix.Tasks.Secret do
   This generates a random base64 string suitable for use as a secret_key_base.
   """
 
+  @doc """
+  Generates and prints a random secret key.
+
+  ## Parameters
+
+    - `args` - Command-line arguments with optional `--length` flag
+  """
   @impl true
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, switches: [length: :integer])

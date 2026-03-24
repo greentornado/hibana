@@ -1,6 +1,18 @@
 defmodule Hibana.Validator do
   @moduledoc """
-  Schema-based request parameter validation.
+  Schema-based request parameter validation with type casting.
+
+  Define validation schemas using a declarative DSL, then validate request
+  parameters with automatic type casting, required field checking, and
+  constraint validation.
+
+  ## Features
+
+  - Declarative field definitions with `validate` and `field` macros
+  - Automatic type casting (string to integer, float, boolean, arrays)
+  - Required fields, default values
+  - Constraints: `:min`, `:max`, `:format` (regex), `:one_of`
+  - Generates `validate/1` and `validate!/1` functions
 
   ## Usage
 
@@ -23,6 +35,27 @@ defmodule Hibana.Validator do
           {:error, errors} -> conn |> put_status(422) |> json(%{errors: errors})
         end
       end
+
+  ## Supported Types
+
+  | Type | Casts from |
+  |------|-----------|
+  | `:string` | Any (via `to_string/1`) |
+  | `:integer` | Strings like `"42"` |
+  | `:float` | Strings like `"3.14"`, integers |
+  | `:boolean` | `"true"`, `"false"` |
+  | `{:array, type}` | Lists with elements of inner type |
+
+  ## Field Options
+
+  | Option | Type | Description |
+  |--------|------|-------------|
+  | `:required` | `boolean()` | Field must be present (default: `false`) |
+  | `:default` | `any()` | Default value when field is absent |
+  | `:min` | `integer()` | Minimum value (numbers) or length (strings) |
+  | `:max` | `integer()` | Maximum value (numbers) or length (strings) |
+  | `:format` | `Regex.t()` | String must match regex |
+  | `:one_of` | `[any()]` | Value must be in the list |
   """
 
   defmacro __using__(_opts) do
@@ -66,6 +99,33 @@ defmodule Hibana.Validator do
     end
   end
 
+  @doc """
+  Validates a map of parameters against a list of field definitions.
+
+  This is the runtime validation engine called by generated `validate/1` functions.
+  You typically do not call this directly; instead, define a validator module
+  with `use Hibana.Validator` and call its `validate/1`.
+
+  ## Parameters
+
+    - `params` - A map of parameters to validate (atom or string keys)
+    - `fields` - A list of `{name, type, opts}` tuples defining the schema
+
+  ## Returns
+
+    - `{:ok, validated_map}` - A map with validated and cast values (atom keys)
+    - `{:error, errors}` - A list of `{field, message}` tuples
+
+  ## Examples
+
+      ```elixir
+      Hibana.Validator.do_validate(
+        %{"name" => "Alice", "age" => "25"},
+        [{:name, :string, [required: true]}, {:age, :integer, [min: 0]}]
+      )
+      # => {:ok, %{name: "Alice", age: 25}}
+      ```
+  """
   def do_validate(params, fields) do
     params = stringify_keys(params)
 

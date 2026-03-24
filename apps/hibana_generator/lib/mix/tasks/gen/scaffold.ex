@@ -19,6 +19,20 @@ defmodule Mix.Tasks.Gen.Scaffold do
   - `--json` -- JSON API only (no HTML)
   """
 
+  @doc """
+  Runs the scaffold generator to create model, controller, and route entries.
+
+  ## Parameters
+
+    - `args` - Command-line arguments: `[name, field:type, ...options]`
+
+  ## Examples
+
+      ```
+      mix gen.scaffold User name:string email:string age:integer
+      mix gen.scaffold Post title:string body:text --no-model
+      ```
+  """
   @impl true
   def run(args) do
     {opts, [name | fields], _} =

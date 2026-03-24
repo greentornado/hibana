@@ -98,7 +98,40 @@ defmodule Hibana.Cron do
     end
   end
 
-  @doc "Check if a cron expression matches the given time components"
+  @doc """
+  Checks if a cron expression matches the given time components.
+
+  ## Parameters
+
+    - `expression` - A 5-field cron expression string (e.g., `"*/5 * * * *"`)
+    - `minute` - Current minute (0-59)
+    - `hour` - Current hour (0-23)
+    - `day` - Current day of month (1-31)
+    - `month` - Current month (1-12)
+    - `weekday` - Current day of week (0-6, 0=Sunday)
+
+  ## Returns
+
+  `true` if the expression matches, `false` otherwise.
+
+  ## Supported Syntax
+
+  - `*` - Match all values
+  - `*/N` - Match every N-th value
+  - `N` - Match exact value
+  - `N-M` - Match range
+  - `N,M,O` - Match list of values
+
+  ## Examples
+
+      ```elixir
+      Hibana.Cron.matches?("*/5 * * * *", 10, 14, 1, 1, 3)
+      # => true (minute 10 is divisible by 5)
+
+      Hibana.Cron.matches?("0 0 * * *", 0, 0, 15, 6, 2)
+      # => true (midnight)
+      ```
+  """
   def matches?(expression, minute, hour, day, month, weekday) do
     parts = String.split(expression, " ")
 

@@ -23,6 +23,13 @@ defmodule Mix.Tasks.Routes do
       /users/:id        DELETE    UserController#delete
   """
 
+  @doc """
+  Lists all routes defined in your application's router.
+
+  ## Parameters
+
+    - `args` - Command-line arguments with optional `--router` flag
+  """
   @impl true
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, switches: [router: :string])

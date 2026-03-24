@@ -102,14 +102,53 @@ defmodule Hibana.Plugins.LiveView do
     end
   end
 
+  @doc """
+  Builds a new LiveView socket for the given handler module.
+
+  ## Parameters
+
+    - `handler` - The LiveView handler module
+    - `endpoint` - The endpoint module
+    - `id` - Optional socket ID (default: auto-generated)
+
+  ## Returns
+
+  A `Hibana.LiveView.Socket` struct.
+  """
   def build_socket(handler, endpoint, id \\ nil) do
     Hibana.LiveView.Socket.new(handler, endpoint, id)
   end
 
+  @doc """
+  Dispatches an event to the LiveView handler.
+
+  ## Parameters
+
+    - `socket` - The LiveView socket
+    - `event` - The event name string
+    - `params` - Event parameters map
+    - `handler` - The handler module
+
+  ## Returns
+
+  The result of the handler's `handle_event/3` callback.
+  """
   def handle_event(socket, event, params, handler) do
     handler.handle_event(event, params, socket)
   end
 
+  @doc """
+  Renders the LiveView template using the handler's `render/1` callback.
+
+  ## Parameters
+
+    - `socket` - The LiveView socket
+    - `handler` - The handler module
+
+  ## Returns
+
+  An HTML string.
+  """
   def render(socket, handler) do
     handler.render(socket.assigns)
   end

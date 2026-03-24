@@ -31,7 +31,37 @@ defmodule Hibana.Plugins.DevErrorPage do
 
   def call(conn, _), do: conn
 
-  @doc "Render an exception as a rich HTML error page"
+  @doc """
+  Renders an exception as a rich HTML error page with stack trace and request info.
+
+  This function is designed for development use only. It displays:
+
+  - Exception type and message
+  - Request details (method, path, query, headers)
+  - Full stack trace with application vs library frame highlighting
+
+  ## Parameters
+
+    - `conn` - The connection struct
+    - `kind` - The error kind (`:error`, `:throw`, `:exit`)
+    - `reason` - The exception struct or thrown value
+    - `stacktrace` - The Erlang stack trace
+
+  ## Returns
+
+  The connection with a 500 HTML response.
+
+  ## Examples
+
+      ```elixir
+      try do
+        raise "something went wrong"
+      rescue
+        e ->
+          Hibana.Plugins.DevErrorPage.render_exception(conn, :error, e, __STACKTRACE__)
+      end
+      ```
+  """
   def render_exception(conn, kind, reason, stacktrace) do
     html = build_error_html(kind, reason, stacktrace, conn)
 

@@ -135,7 +135,29 @@ defmodule Hibana.Queue do
   end
 
   @doc """
-  Enqueue a job to be processed.
+  Enqueues a job to be processed by the queue worker.
+
+  Jobs are stored in ETS and processed asynchronously. Failed jobs are
+  retried with exponential backoff.
+
+  ## Parameters
+
+    - `module` - The job module (must implement `perform/1`)
+    - `args` - Arguments passed to `module.perform/1`
+    - `opts` - Options:
+      - `:delay` - Delay before processing in milliseconds (default: `0`)
+      - `:retry` - Maximum number of retries on failure (default: `3`)
+
+  ## Returns
+
+    - `{:ok, id}` - The unique job ID
+
+  ## Examples
+
+      ```elixir
+      {:ok, id} = Hibana.Queue.enqueue(SendEmailJob, %{to: "user@example.com"})
+      {:ok, id} = Hibana.Queue.enqueue(SendEmailJob, %{to: "user@example.com"}, delay: 5000, retry: 5)
+      ```
   """
   def enqueue(module, args, opts \\ []) do
     id = generate_id()
@@ -157,7 +179,29 @@ defmodule Hibana.Queue do
   end
 
   @doc """
-  Enqueue a job to be processed at a specific time.
+  Enqueues a job to be processed at a specific Unix timestamp (in milliseconds).
+
+  The job remains in `:scheduled` status until the given time, then transitions
+  to `:available` for processing.
+
+  ## Parameters
+
+    - `module` - The job module (must implement `perform/1`)
+    - `args` - Arguments passed to `module.perform/1`
+    - `at` - Unix timestamp in milliseconds when the job should run
+    - `opts` - Options:
+      - `:retry` - Maximum number of retries on failure (default: `3`)
+
+  ## Returns
+
+    - `{:ok, id}` - The unique job ID
+
+  ## Examples
+
+      ```elixir
+      future = System.system_time(:millisecond) + 60_000
+      {:ok, id} = Hibana.Queue.enqueue_at(MyJob, %{data: "value"}, future)
+      ```
   """
   def enqueue_at(module, args, at, opts \\ []) when is_integer(at) do
     id = generate_id()
@@ -175,7 +219,18 @@ defmodule Hibana.Queue do
   end
 
   @doc """
-  Get queue statistics.
+  Returns queue statistics.
+
+  ## Returns
+
+  A map with `:total`, `:available`, and `:scheduled` job counts.
+
+  ## Examples
+
+      ```elixir
+      Hibana.Queue.stats()
+      # => %{total: 42, available: 30, scheduled: 12}
+      ```
   """
   def stats do
     total = :ets.info(@ets_table, :size)
@@ -190,7 +245,11 @@ defmodule Hibana.Queue do
   end
 
   @doc """
-  Clear all jobs from queue.
+  Clears all jobs from the queue.
+
+  ## Returns
+
+  `:ok`
   """
   def clear do
     :ets.delete_all_objects(@ets_table)

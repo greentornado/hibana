@@ -44,7 +44,27 @@ defmodule Hibana.Cluster do
 
   @registry Hibana.Cluster.PubSub
 
-  @doc "Start the cluster manager with the given discovery strategy and options."
+  @doc """
+  Starts the cluster manager GenServer with the given discovery strategy.
+
+  ## Parameters
+
+    - `opts` - Keyword list of options:
+      - `:strategy` - Node discovery strategy: `:epmd`, `:dns`, or `:gossip` (default: `:epmd`)
+      - `:hosts` - List of node names to connect to for `:epmd` strategy (default: `[]`)
+      - `:heartbeat_interval` - Interval in ms between reconnection attempts (default: `5_000`)
+
+  ## Returns
+
+    - `{:ok, pid}` on success
+
+  ## Examples
+
+      ```elixir
+      Hibana.Cluster.start_link(strategy: :epmd, hosts: [:"app@node1", :"app@node2"])
+      Hibana.Cluster.start_link(strategy: :gossip, port: 45892)
+      ```
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -85,32 +105,121 @@ defmodule Hibana.Cluster do
 
   # --- Public API ---
 
-  @doc "Get all connected nodes"
+  @doc """
+  Returns a list of all connected nodes, including the current node.
+
+  ## Returns
+
+  A list of node atoms.
+
+  ## Examples
+
+      ```elixir
+      Hibana.Cluster.nodes()
+      # => [:"app@node1", :"app@node2"]
+      ```
+  """
   def nodes do
     [Node.self() | Node.list()]
   end
 
-  @doc "Number of connected nodes"
+  @doc """
+  Returns the number of connected nodes (including the current node).
+
+  ## Returns
+
+  An integer count.
+
+  ## Examples
+
+      ```elixir
+      Hibana.Cluster.node_count()
+      # => 3
+      ```
+  """
   def node_count do
     length(Node.list()) + 1
   end
 
-  @doc "Check if cluster is healthy"
+  @doc """
+  Checks if the cluster is healthy (i.e., the current node is alive and distributed).
+
+  ## Returns
+
+  `true` if `Node.alive?/0` returns true, `false` otherwise.
+
+  ## Examples
+
+      ```elixir
+      Hibana.Cluster.healthy?()
+      # => true
+      ```
+  """
   def healthy? do
     Node.alive?()
   end
 
-  @doc "Subscribe current process to a topic"
+  @doc """
+  Subscribes the current process to a PubSub topic.
+
+  The process will receive `{:cluster_event, topic, message}` tuples
+  when messages are broadcast to the topic.
+
+  ## Parameters
+
+    - `topic` - A string topic name
+
+  ## Returns
+
+    - `{:ok, pid}` on success
+
+  ## Examples
+
+      ```elixir
+      Hibana.Cluster.subscribe("chat:lobby")
+      # Messages arrive as {:cluster_event, "chat:lobby", payload}
+      ```
+  """
   def subscribe(topic) do
     Registry.register(@registry, topic, [])
   end
 
-  @doc "Unsubscribe current process from a topic"
+  @doc """
+  Unsubscribes the current process from a PubSub topic.
+
+  ## Parameters
+
+    - `topic` - The topic string to unsubscribe from
+
+  ## Returns
+
+  `:ok`
+  """
   def unsubscribe(topic) do
     Registry.unregister(@registry, topic)
   end
 
-  @doc "Broadcast a message to all subscribers on all nodes"
+  @doc """
+  Broadcasts a message to all subscribers on all connected nodes.
+
+  Sends the message to local subscribers first, then uses `:rpc.cast/4`
+  to broadcast to all remote nodes.
+
+  ## Parameters
+
+    - `topic` - The topic string
+    - `message` - Any term to broadcast
+
+  ## Returns
+
+  `:ok`
+
+  ## Examples
+
+      ```elixir
+      Hibana.Cluster.broadcast("chat:lobby", %{user: "alice", msg: "hello"})
+      ```
+  """
   def broadcast(topic, message) do
     # Local broadcast
     local_broadcast(topic, message)
@@ -123,7 +232,14 @@ defmodule Hibana.Cluster do
     :ok
   end
 
-  @doc "Broadcast only to local node subscribers"
+  @doc """
+  Broadcasts a message only to subscribers on the local node.
+
+  ## Parameters
+
+    - `topic` - The topic string
+    - `message` - Any term to broadcast
+  """
   def local_broadcast(topic, message) do
     Registry.dispatch(@registry, topic, fn entries ->
       for {pid, _} <- entries do
@@ -132,17 +248,70 @@ defmodule Hibana.Cluster do
     end)
   end
 
-  @doc "Call a function on a specific node"
+  @doc """
+  Calls a function on a specific remote node and waits for the result.
+
+  ## Parameters
+
+    - `node` - The target node atom
+    - `mod` - The module to call
+    - `fun` - The function name atom
+    - `args` - List of arguments
+    - `timeout` - Timeout in milliseconds (default: `5_000`)
+
+  ## Returns
+
+  The return value of the remote function call.
+
+  ## Examples
+
+      ```elixir
+      Hibana.Cluster.call_on(:"app@node2", MyModule, :get_data, [1])
+      ```
+  """
   def call_on(node, mod, fun, args, timeout \\ 5_000) do
     :rpc.call(node, mod, fun, args, timeout)
   end
 
-  @doc "Cast a function on a specific node (async)"
+  @doc """
+  Casts (fires and forgets) a function call on a specific remote node.
+
+  ## Parameters
+
+    - `node` - The target node atom
+    - `mod` - The module to call
+    - `fun` - The function name atom
+    - `args` - List of arguments
+
+  ## Returns
+
+  `:true` (always, since it's asynchronous).
+  """
   def cast_on(node, mod, fun, args) do
     :rpc.cast(node, mod, fun, args)
   end
 
-  @doc "Call a function on all nodes and collect results"
+  @doc """
+  Calls a function on all connected nodes and collects the results.
+
+  ## Parameters
+
+    - `mod` - The module to call
+    - `fun` - The function name atom
+    - `args` - List of arguments
+    - `timeout` - Timeout in milliseconds (default: `5_000`)
+
+  ## Returns
+
+  A tuple `{results, bad_nodes}` where `results` is a list of return values
+  and `bad_nodes` is a list of nodes that failed to respond.
+
+  ## Examples
+
+      ```elixir
+      {results, bad_nodes} = Hibana.Cluster.multicall(MyModule, :get_stats, [])
+      ```
+  """
   def multicall(mod, fun, args, timeout \\ 5_000) do
     :rpc.multicall(nodes(), mod, fun, args, timeout)
   end

@@ -23,10 +23,21 @@ defmodule Hibana.Plug.Defaults do
 
   import Plug.Conn
 
+  @doc """
+  Initializes the plug with options (passed through unchanged).
+  """
   def init(opts) do
     opts
   end
 
+  @doc """
+  Fetches query parameters and assigns them to `conn.assigns.params`.
+
+  ## Parameters
+
+    - `conn` - The connection struct
+    - `_opts` - Unused
+  """
   def call(conn, _opts) do
     conn = fetch_query_params(conn)
     assign(conn, :params, conn.params)

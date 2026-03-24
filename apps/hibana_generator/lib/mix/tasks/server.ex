@@ -22,6 +22,13 @@ defmodule Mix.Tasks.Server do
       mix server --host localhost --port 8080
   """
 
+  @doc """
+  Starts the Hibana application server.
+
+  ## Parameters
+
+    - `args` - Command-line arguments with optional `--host`, `--port`, `--prod`, `--no-compile` flags
+  """
   @impl true
   def run(args) do
     {opts, _, _} =

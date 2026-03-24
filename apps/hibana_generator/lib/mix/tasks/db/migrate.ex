@@ -20,6 +20,13 @@ defmodule Mix.Tasks.Db.Migrate do
       mix db.migrate --step 1
   """
 
+  @doc """
+  Runs pending database migrations.
+
+  ## Parameters
+
+    - `args` - Command-line arguments with optional `--repo`, `--step`, `--all` flags
+  """
   @impl true
   def run(args) do
     {opts, _, _} =

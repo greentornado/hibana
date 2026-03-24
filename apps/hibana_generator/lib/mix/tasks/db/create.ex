@@ -18,6 +18,13 @@ defmodule Mix.Tasks.Db.Create do
       mix db.create --repo MyApp.Repo
   """
 
+  @doc """
+  Creates the database for the configured Ecto repo.
+
+  ## Parameters
+
+    - `args` - Command-line arguments with optional `--repo` flag
+  """
   @impl true
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, switches: [repo: :string])

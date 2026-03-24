@@ -23,6 +23,20 @@ defmodule Mix.Tasks.Gen.Controller do
       mix gen.controller Admin/User --path controllers/admin
   """
 
+  @doc """
+  Runs the controller generator.
+
+  ## Parameters
+
+    - `args` - Command-line arguments: `[name, ...options]`
+
+  ## Examples
+
+      ```
+      mix gen.controller User
+      mix gen.controller User --actions index,show
+      ```
+  """
   @impl true
   def run(args) do
     {opts, [name | _], _} =

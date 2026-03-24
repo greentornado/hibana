@@ -41,6 +41,27 @@ defmodule Hibana.CircuitBreaker do
     :success_count
   ]
 
+  @doc """
+  Starts a circuit breaker process with the given options.
+
+  ## Parameters
+
+    - `opts` - Keyword list of options:
+      - `:name` - Process name (required, used for `GenServer` registration)
+      - `:threshold` - Number of failures before opening the circuit (default: `5`)
+      - `:timeout` - Time in ms before trying half-open after opening (default: `30_000`)
+      - `:reset_timeout` - Time in ms before full reset (default: `60_000`)
+
+  ## Returns
+
+    - `{:ok, pid}` on success
+
+  ## Examples
+
+      ```elixir
+      Hibana.CircuitBreaker.start_link(name: :payment_api, threshold: 5, timeout: 30_000)
+      ```
+  """
   def start_link(opts) do
     name = Keyword.fetch!(opts, :name)
     GenServer.start_link(__MODULE__, opts, name: name)
@@ -61,17 +82,80 @@ defmodule Hibana.CircuitBreaker do
     {:ok, state}
   end
 
-  @doc "Execute a function through the circuit breaker"
+  @doc """
+  Executes a function through the circuit breaker.
+
+  If the circuit is closed, the function runs normally. If open, returns
+  `{:error, :circuit_open}` immediately without calling the function.
+  In half-open state, allows the call through as a test.
+
+  ## Parameters
+
+    - `name` - The registered circuit breaker name
+    - `fun` - A zero-arity function to execute
+
+  ## Returns
+
+    - `{:ok, result}` - The function succeeded
+    - `{:error, :circuit_open}` - The circuit is open, call rejected
+    - `{:error, reason}` - The function raised or threw an error
+
+  ## Examples
+
+      ```elixir
+      case Hibana.CircuitBreaker.call(:payment_api, fn -> HTTPClient.post(url, body) end) do
+        {:ok, response} -> handle_response(response)
+        {:error, :circuit_open} -> fallback_response()
+        {:error, reason} -> handle_error(reason)
+      end
+      ```
+  """
   def call(name, fun) do
     GenServer.call(name, {:call, fun}, 30_000)
   end
 
-  @doc "Get current state"
+  @doc """
+  Gets the current status of a circuit breaker.
+
+  ## Parameters
+
+    - `name` - The registered circuit breaker name
+
+  ## Returns
+
+  A map with `:state` (`:closed`, `:open`, or `:half_open`), `:failure_count`,
+  `:success_count`, and `:threshold`.
+
+  ## Examples
+
+      ```elixir
+      Hibana.CircuitBreaker.status(:payment_api)
+      # => %{state: :closed, failure_count: 0, success_count: 5, threshold: 5}
+      ```
+  """
   def status(name) do
     GenServer.call(name, :status)
   end
 
-  @doc "Manually reset the circuit breaker"
+  @doc """
+  Manually resets the circuit breaker to the closed state.
+
+  Clears failure and success counters.
+
+  ## Parameters
+
+    - `name` - The registered circuit breaker name
+
+  ## Returns
+
+  `:ok`
+
+  ## Examples
+
+      ```elixir
+      Hibana.CircuitBreaker.reset(:payment_api)
+      ```
+  """
   def reset(name) do
     GenServer.call(name, :reset)
   end

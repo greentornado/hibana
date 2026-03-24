@@ -149,7 +149,26 @@ defmodule Hibana.Plugins.JWT do
   end
 
   @doc """
-  Generate a new JWT token.
+  Generates a new JWT token by signing the given claims.
+
+  ## Parameters
+
+    - `claims` - A map of claims to include in the token (e.g., `%{"sub" => "user123"}`)
+    - `secret` - The secret key string for HMAC signing
+    - `opts` - Options:
+      - `:algorithm` - Signing algorithm (default: `:HS256`)
+      - `:exp` - Expiry time in seconds from now (default: `3600`)
+
+  ## Returns
+
+  A JWT token string.
+
+  ## Examples
+
+      ```elixir
+      token = Hibana.Plugins.JWT.sign(%{"sub" => "user123"}, "secret")
+      token = Hibana.Plugins.JWT.sign(%{"sub" => "user123"}, "secret", exp: 7200, algorithm: :HS512)
+      ```
   """
   def sign(claims, secret, opts \\ []) do
     algorithm = Keyword.get(opts, :algorithm, :HS256)
@@ -164,14 +183,55 @@ defmodule Hibana.Plugins.JWT do
   end
 
   @doc """
-  Verify and decode a JWT token.
+  Verifies and decodes a JWT token.
+
+  Checks the HMAC signature and validates the `exp` claim if present.
+
+  ## Parameters
+
+    - `token` - The JWT token string
+    - `secret` - The secret key used for signing
+    - `_opts` - Reserved for future use
+
+  ## Returns
+
+    - `{:ok, claims}` - The decoded claims map
+    - `{:error, :token_expired}` - Token has expired
+    - `{:error, :invalid_signature}` - Signature verification failed
+    - `{:error, :invalid_token}` - Token is malformed
+
+  ## Examples
+
+      ```elixir
+      {:ok, claims} = Hibana.Plugins.JWT.verify(token, "secret")
+      claims["sub"]
+      # => "user123"
+      ```
   """
   def verify(token, secret, _opts \\ []) do
     verify_token(token, secret, :HS256)
   end
 
   @doc """
-  Extract claims from a token without verification (for debugging).
+  Decodes a JWT token without verifying the signature.
+
+  Useful for debugging and inspecting token contents. Do not use
+  this for authentication -- always use `verify/2` instead.
+
+  ## Parameters
+
+    - `token` - The JWT token string
+
+  ## Returns
+
+    - `{:ok, claims}` - The decoded claims map
+    - `{:error, :invalid_token}` - Token is malformed
+
+  ## Examples
+
+      ```elixir
+      {:ok, claims} = Hibana.Plugins.JWT.decode(token)
+      ```
   """
   def decode(token) do
     try do

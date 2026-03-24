@@ -1,6 +1,17 @@
 defmodule Hibana.Pipeline do
   @moduledoc """
-  Middleware pipeline DSL with route groups and per-group plugs.
+  Middleware pipeline DSL with named pipelines and scoped route groups.
+
+  Allows grouping plugs into named pipelines and applying them to route
+  scopes. This provides a clean way to share middleware across related
+  routes without repeating plug declarations.
+
+  ## Features
+
+  - Named pipelines with `pipeline/2` macro
+  - Scoped routes with `scope/3` macro
+  - Per-scope pipeline assignment
+  - Works with `Hibana.CompiledRouter`
 
   ## Usage
 
@@ -31,6 +42,13 @@ defmodule Hibana.Pipeline do
           get "/health", HealthController, :index
         end
       end
+
+  ## Macros
+
+  | Macro | Description |
+  |-------|-------------|
+  | `pipeline/2` | Define a named group of plugs |
+  | `scope/3` | Group routes under a path prefix with a pipeline |
   """
 
   defmacro __using__(_opts) do

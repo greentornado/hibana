@@ -57,7 +57,30 @@ defmodule Hibana.Features do
       ])
   """
 
-  @doc "Check if a feature/module is enabled in config"
+  @doc """
+  Checks if a feature module is enabled in the application config.
+
+  Supports both list-based and map-based feature configurations.
+  When no feature config is set, all features are enabled by default.
+
+  ## Parameters
+
+    - `module` - The module atom to check
+
+  ## Returns
+
+  `true` if the feature is enabled, `false` otherwise.
+
+  ## Examples
+
+      ```elixir
+      Hibana.Features.enabled?(Hibana.Plugins.Logger)
+      # => true
+
+      Hibana.Features.enabled?(Hibana.Plugins.GraphQL)
+      # => false (if disabled in config)
+      ```
+  """
   def enabled?(module) do
     blocked = Application.get_env(:hibana, :disabled_features, [])
 
@@ -73,7 +96,30 @@ defmodule Hibana.Features do
     end
   end
 
-  @doc "Filter a list of supervisor children, keeping only enabled ones"
+  @doc """
+  Filters a list of supervisor child specs, keeping only enabled features.
+
+  Useful for conditionally starting services in your supervision tree
+  based on the feature configuration.
+
+  ## Parameters
+
+    - `children` - A list of child specs (`{module, opts}` tuples or module atoms)
+
+  ## Returns
+
+  A filtered list containing only children whose modules are enabled.
+
+  ## Examples
+
+      ```elixir
+      children = Hibana.Features.filter_children([
+        {Hibana.Cluster, strategy: :epmd},
+        {Hibana.PersistentQueue, name: :jobs},
+        {Hibana.Plugins.Metrics, []}
+      ])
+      ```
+  """
   def filter_children(children) do
     Enum.filter(children, fn
       {module, _opts} -> enabled?(module)
@@ -81,7 +127,24 @@ defmodule Hibana.Features do
     end)
   end
 
-  @doc "Conditionally add a plug only if the module is enabled in config"
+  @doc """
+  Conditionally adds a plug only if the module is enabled in the feature config.
+
+  Use this macro in your router to skip disabled plugins at compile time.
+
+  ## Parameters
+
+    - `module` - The plug module
+    - `opts` - Options passed to the plug (default: `[]`)
+
+  ## Examples
+
+      ```elixir
+      feature_plug Hibana.Plugins.Logger
+      feature_plug Hibana.Plugins.JWT, secret: "secret"
+      feature_plug Hibana.Plugins.RateLimiter, max_requests: 100
+      ```
+  """
   defmacro feature_plug(module, opts \\ []) do
     quote do
       if Hibana.Features.enabled?(unquote(module)) do
@@ -90,7 +153,14 @@ defmodule Hibana.Features do
     end
   end
 
-  @doc "List all enabled features"
+  @doc """
+  Lists all enabled features.
+
+  ## Returns
+
+    - `:all` if no feature config is set (all enabled)
+    - A list of enabled module atoms
+  """
   def list_enabled do
     case Application.get_env(:hibana, :features) do
       nil ->
@@ -104,7 +174,14 @@ defmodule Hibana.Features do
     end
   end
 
-  @doc "List all disabled features"
+  @doc """
+  Lists all explicitly disabled features.
+
+  ## Returns
+
+  A list of disabled module atoms. Returns `[]` if using list-based config
+  (cannot determine disabled features from a whitelist).
+  """
   def list_disabled do
     case Application.get_env(:hibana, :features) do
       nil ->
@@ -119,7 +196,17 @@ defmodule Hibana.Features do
     end
   end
 
-  @doc "Enable a feature at runtime"
+  @doc """
+  Enables a feature at runtime by updating the application config.
+
+  ## Parameters
+
+    - `module` - The module atom to enable
+
+  ## Returns
+
+  `:ok`
+  """
   def enable(module) do
     # Remove from blocklist if present
     blocked = Application.get_env(:hibana, :disabled_features, [])
@@ -141,7 +228,17 @@ defmodule Hibana.Features do
     :ok
   end
 
-  @doc "Disable a feature at runtime"
+  @doc """
+  Disables a feature at runtime by updating the application config.
+
+  ## Parameters
+
+    - `module` - The module atom to disable
+
+  ## Returns
+
+  `:ok`
+  """
   def disable(module) do
     case Application.get_env(:hibana, :features) do
       nil ->

@@ -21,6 +21,26 @@ defmodule Hibana.CodeReloader do
   use GenServer
   require Logger
 
+  @doc """
+  Starts the code reloader GenServer.
+
+  ## Parameters
+
+    - `opts` - Keyword list of options:
+      - `:dirs` - Directories to watch for changes (default: `["lib"]`)
+      - `:interval` - Poll interval in milliseconds (default: `1_000`)
+      - `:callback` - Optional function called after successful recompile
+
+  ## Returns
+
+    - `{:ok, pid}` on success
+
+  ## Examples
+
+      ```elixir
+      Hibana.CodeReloader.start_link(dirs: ["lib"], interval: 2_000)
+      ```
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end

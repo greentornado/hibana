@@ -70,6 +70,16 @@ defmodule Hibana.Plugins.Metrics do
   use Hibana.Plugin
   import Plug.Conn
 
+  @doc """
+  Sets up the metrics ETS table and attaches telemetry handlers.
+
+  Creates the `:metrics` ETS table and attaches a handler for
+  `[:hibana, :request, :total]` events. Safe to call multiple times.
+
+  ## Returns
+
+  `:ok`
+  """
   def setup do
     case :ets.whereis(:metrics) do
       :undefined ->
@@ -94,6 +104,11 @@ defmodule Hibana.Plugins.Metrics do
     :ok
   end
 
+  @doc """
+  Initializes the metrics system by calling `setup/0`.
+
+  Returns `:ignore` since this is a one-time setup task, not a long-running process.
+  """
   def start_link do
     setup()
     :ignore

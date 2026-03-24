@@ -19,6 +19,13 @@ defmodule Mix.Tasks.Bench do
 
   @shortdoc "Benchmark route performance"
 
+  @doc """
+  Runs the route performance benchmark.
+
+  ## Parameters
+
+    - `args` - Command-line arguments with `--routes`, `--concurrency`, `--duration`, `--method`, `--router` flags
+  """
   @impl true
   def run(args) do
     {opts, _, _} =

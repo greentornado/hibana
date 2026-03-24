@@ -1,48 +1,35 @@
 defmodule Hibana.Router.DSL do
   @moduledoc """
-  DSL macros for defining routes in a router.
+  DSL macros for defining routes in a Hibana router.
+
+  Provides Sinatra-style route definitions with support for controller-based
+  handlers and inline anonymous handlers. Routes are accumulated at compile
+  time and dispatched at runtime via `Hibana.Router`.
+
+  ## Features
+
+  - HTTP method macros: `get/3`, `post/3`, `put/3`, `delete/3`, `patch/3`, `options/3`, `head/3`
+  - Inline handler blocks with `do:` syntax
+  - Plug pipeline support via `plug/1` and `plug/2`
+  - Automatic `Plug` behaviour implementation via `@before_compile`
 
   ## HTTP Method Macros
 
-  ### get/3
-  Defines a GET route.
+  Each macro accepts a path, a controller module, and an action atom:
 
       get "/users", UserController, :index
-      get "/users/:id", UserController, :show
-
-  ### post/3
-  Defines a POST route.
-
       post "/users", UserController, :create
-
-  ### put/3
-  Defines a PUT route.
-
+      get "/users/:id", UserController, :show
       put "/users/:id", UserController, :update
-
-  ### delete/3
-  Defines a DELETE route.
-
       delete "/users/:id", UserController, :delete
-
-  ### patch/3
-  Defines a PATCH route.
-
       patch "/users/:id", UserController, :partial_update
-
-  ### options/3
-  Defines an OPTIONS route.
-
       options "/api/users", MyController, :options
-
-  ### head/3
-  Defines a HEAD route.
-
       head "/users", MyController, :head
 
   ## Inline Handlers
 
-  You can also define inline handlers using a block:
+  Define handlers inline with a `do` block. The variable `conn` is
+  available inside the block:
 
       get "/hello" do
         json(conn, %{message: "Hello!"})
@@ -50,19 +37,19 @@ defmodule Hibana.Router.DSL do
 
   ## Plug Pipeline
 
-  Add plugs to the pipeline:
+  Add plugs that run before route matching:
 
-      plug(Hibana.Plugins.BodyParser)
-      plug(Hibana.Plugins.Logger)
-      plug(Hibana.Plugins.Session)
+      plug Hibana.Plugins.BodyParser
+      plug Hibana.Plugins.Logger
+      plug Hibana.Plugins.Session, secret: "my-secret"
 
   ## Complete Example
 
       defmodule MyApp.Router do
         use Hibana.Router.DSL
 
-        plug(Hibana.Plugins.BodyParser)
-        plug(Hibana.Plugins.Logger)
+        plug Hibana.Plugins.BodyParser
+        plug Hibana.Plugins.Logger
 
         get "/", PageController, :index
         get "/users", UserController, :index

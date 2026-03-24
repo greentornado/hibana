@@ -121,6 +121,30 @@ defmodule Hibana.Plugins.ContentNegotiation do
     end)
   end
 
+  @doc """
+  Renders data in the specified format and sends the response.
+
+  Supports `"json"`, `"xml"`, and `"csv"` formats. Falls back to JSON
+  for unknown formats.
+
+  ## Parameters
+
+    - `conn` - The connection struct
+    - `format` - The format string (`"json"`, `"xml"`, `"csv"`)
+    - `data` - The data to render
+
+  ## Returns
+
+  The connection with the response sent.
+
+  ## Examples
+
+      ```elixir
+      render_as(conn, "json", %{users: []})
+      render_as(conn, "xml", %{name: "Alice"})
+      render_as(conn, "csv", [%{"name" => "Alice"}, %{"name" => "Bob"}])
+      ```
+  """
   def render_as(conn, format, data) do
     content_type = Map.get(@formats, format, "application/json")
 

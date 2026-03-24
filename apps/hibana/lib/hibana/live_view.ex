@@ -26,11 +26,34 @@ defmodule Hibana.LiveView do
 
   defmodule Socket do
     @moduledoc """
-    The LiveView socket that holds the state.
+    The LiveView socket struct that holds state, assigns, and connection metadata.
+
+    ## Fields
+
+    | Field | Type | Description |
+    |-------|------|-------------|
+    | `:assigns` | `map()` | User-defined state (via `assign/2` and `assign/3`) |
+    | `:endpoint` | `module()` | The Hibana endpoint module |
+    | `:handler` | `module()` | The LiveView handler module |
+    | `:id` | `String.t()` | Unique socket identifier |
+    | `:connected?` | `boolean()` | Whether WebSocket handshake is complete |
     """
 
     defstruct [:assigns, :endpoint, :handler, :id, :connected?]
 
+    @doc """
+    Creates a new LiveView socket.
+
+    ## Parameters
+
+      - `handler` - The LiveView handler module
+      - `endpoint` - The endpoint module
+      - `id` - Optional socket ID (default: auto-generated)
+
+    ## Returns
+
+    A new `Socket` struct with empty assigns.
+    """
     def new(handler, endpoint, id \\ nil) do
       %__MODULE__{
         assigns: %{},
@@ -41,10 +64,35 @@ defmodule Hibana.LiveView do
       }
     end
 
+    @doc """
+    Assigns a single key-value pair to the socket.
+
+    ## Parameters
+
+      - `socket` - The socket struct
+      - `key` - An atom key
+      - `value` - The value to assign
+
+    ## Returns
+
+    The socket with the updated assigns.
+    """
     def assign(socket, key, value) when is_atom(key) do
       %{socket | assigns: Map.put(socket.assigns, key, value)}
     end
 
+    @doc """
+    Assigns multiple key-value pairs from a keyword list to the socket.
+
+    ## Parameters
+
+      - `socket` - The socket struct
+      - `keyword_list` - A keyword list of assigns
+
+    ## Returns
+
+    The socket with the updated assigns.
+    """
     def assign(socket, keyword_list) when is_list(keyword_list) do
       Enum.reduce(keyword_list, socket, fn {key, value}, acc ->
         assign(acc, key, value)
@@ -55,6 +103,15 @@ defmodule Hibana.LiveView do
       %{socket | assigns: Map.merge(socket.assigns, Map.from_struct(assigns))}
     end
 
+    @doc """
+    Pushes an event with a payload to the client.
+
+    ## Parameters
+
+      - `socket` - The socket struct
+      - `event` - The event name string
+      - `payload` - The event payload
+    """
     def push_event(socket, event, payload) do
       %{socket | assigns: Map.put(socket.assigns, :"phx-#{event}", payload)}
     end

@@ -2,49 +2,77 @@ defmodule Hibana.Router do
   @moduledoc """
   Router module for handling HTTP requests with pattern matching.
 
+  This module implements the `Plug` behaviour and provides runtime route
+  matching. Routes are matched sequentially against the request method and
+  path. For O(1) compiled routing, see `Hibana.CompiledRouter`.
+
   ## Usage
 
       defmodule MyApp.Router do
         use Hibana.Router.DSL
 
-        plug(Hibana.Plugins.BodyParser)
-        plug(Hibana.Plugins.Logger)
+        plug Hibana.Plugins.BodyParser
+        plug Hibana.Plugins.Logger
 
-        get("/users", MyApp.UserController, :index)
-        post("/users", MyApp.UserController, :create)
-        get("/users/:id", MyApp.UserController, :show)
-        put("/users/:id", MyApp.UserController, :update)
-        delete("/users/:id", MyApp.UserController, :delete)
+        get "/users", MyApp.UserController, :index
+        post "/users", MyApp.UserController, :create
+        get "/users/:id", MyApp.UserController, :show
+        put "/users/:id", MyApp.UserController, :update
+        delete "/users/:id", MyApp.UserController, :delete
       end
 
   ## Route Matching
 
-  Routes are matched using pattern matching on the path:
+  Routes are matched using pattern matching on the path segments:
 
-  - Static paths: `/users`
-  - Parameter paths: `/users/:id`
-  - Wildcard paths: `/files/*path`
+  - **Static paths**: `/users` matches exactly
+  - **Parameter paths**: `/users/:id` captures the segment as a param
+  - **Wildcard paths**: `/files/*path` captures the rest of the path
 
   ## DSL Macros
 
-  The `Hibana.Router.DSL` module provides:
+  The `Hibana.Router.DSL` module provides route definition macros:
 
-  - `get/3` - GET requests
-  - `post/3` - POST requests
-  - `put/3` - PUT requests
-  - `delete/3` - DELETE requests
-  - `patch/3` - PATCH requests
-  - `options/3` - OPTIONS requests
-  - `head/3` - HEAD requests
+  | Macro | HTTP Method |
+  |-------|-------------|
+  | `get/3` | GET |
+  | `post/3` | POST |
+  | `put/3` | PUT |
+  | `delete/3` | DELETE |
+  | `patch/3` | PATCH |
+  | `options/3` | OPTIONS |
+  | `head/3` | HEAD |
 
-  - `plug/1` - Add a plug to the pipeline
+  Plus `plug/1` and `plug/2` to add plugs to the request pipeline.
+
+  ## Plug Pipeline
+
+  Plugs registered with `plug/1` run before route matching. If any plug
+  halts the connection, route matching is skipped.
   """
 
   @behaviour Plug
 
   import Plug.Conn
 
-  @doc "Initialize the router with routes and plugs from the given options."
+  @doc """
+  Initializes the router with routes and plugs from the given options.
+
+  ## Parameters
+
+    - `opts` - Keyword list with `:routes` (list of route tuples) and `:plugs` (list of plug modules)
+
+  ## Returns
+
+  A map with `:routes` and `:plugs` keys.
+
+  ## Examples
+
+      ```elixir
+      Hibana.Router.init(routes: [{:get, "/", MyController, :index}], plugs: [])
+      # => %{routes: [...], plugs: []}
+      ```
+  """
   def init(opts) do
     %{
       routes: Keyword.get(opts, :routes, []),
@@ -52,7 +80,22 @@ defmodule Hibana.Router do
     }
   end
 
-  @doc "Process a request through the plug pipeline and match it against registered routes."
+  @doc """
+  Processes a request through the plug pipeline and matches it against registered routes.
+
+  First runs all registered plugs in order. If the connection is not halted,
+  attempts to match the request method and path against the route list.
+  Returns a 404 response if no route matches.
+
+  ## Parameters
+
+    - `conn` - The `Plug.Conn` struct
+    - `opts` - A map with `:routes` and `:plugs` (from `init/1`)
+
+  ## Returns
+
+  The connection after processing.
+  """
   def call(conn, %{routes: routes, plugs: plugs}) do
     conn =
       Enum.reduce(plugs, conn, fn plug, acc ->

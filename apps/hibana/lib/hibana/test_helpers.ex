@@ -32,32 +32,132 @@ defmodule Hibana.TestHelpers do
     end
   end
 
-  @doc "Make a GET request"
+  @doc """
+  Makes a test GET request and returns the resulting connection.
+
+  ## Parameters
+
+    - `path` - The request path (e.g., `"/users"`)
+    - `params` - Query parameters as a map (default: `%{}`)
+    - `headers` - List of `{key, value}` header tuples (default: `[]`)
+
+  ## Returns
+
+  A `Plug.Conn` struct with the request populated.
+
+  ## Examples
+
+      ```elixir
+      conn = get("/users")
+      conn = get("/users", %{page: 1}, [{"accept", "application/json"}])
+      ```
+  """
   def get(path, params \\ %{}, headers \\ []) do
     build_conn(:get, path, params, headers)
   end
 
-  @doc "Make a POST request"
+  @doc """
+  Makes a test POST request with a JSON body.
+
+  Automatically sets `Content-Type: application/json` when body is a map.
+
+  ## Parameters
+
+    - `path` - The request path
+    - `body` - The request body (map is JSON-encoded) (default: `%{}`)
+    - `headers` - List of `{key, value}` header tuples (default: `[]`)
+
+  ## Returns
+
+  A `Plug.Conn` struct.
+
+  ## Examples
+
+      ```elixir
+      conn = post("/users", %{name: "Alice", email: "alice@test.com"})
+      ```
+  """
   def post(path, body \\ %{}, headers \\ []) do
     build_conn(:post, path, body, headers)
   end
 
-  @doc "Make a PUT request"
+  @doc """
+  Makes a test PUT request with a JSON body.
+
+  ## Parameters
+
+    - `path` - The request path
+    - `body` - The request body (map is JSON-encoded) (default: `%{}`)
+    - `headers` - List of `{key, value}` header tuples (default: `[]`)
+
+  ## Returns
+
+  A `Plug.Conn` struct.
+  """
   def put(path, body \\ %{}, headers \\ []) do
     build_conn(:put, path, body, headers)
   end
 
-  @doc "Make a PATCH request"
+  @doc """
+  Makes a test PATCH request with a JSON body.
+
+  ## Parameters
+
+    - `path` - The request path
+    - `body` - The request body (map is JSON-encoded) (default: `%{}`)
+    - `headers` - List of `{key, value}` header tuples (default: `[]`)
+
+  ## Returns
+
+  A `Plug.Conn` struct.
+  """
   def patch(path, body \\ %{}, headers \\ []) do
     build_conn(:patch, path, body, headers)
   end
 
-  @doc "Make a DELETE request"
+  @doc """
+  Makes a test DELETE request.
+
+  ## Parameters
+
+    - `path` - The request path
+    - `params` - Request parameters (default: `%{}`)
+    - `headers` - List of `{key, value}` header tuples (default: `[]`)
+
+  ## Returns
+
+  A `Plug.Conn` struct.
+  """
   def delete(path, params \\ %{}, headers \\ []) do
     build_conn(:delete, path, params, headers)
   end
 
-  @doc "Assert and decode JSON response"
+  @doc """
+  Asserts the response has the expected status code and JSON content type,
+  then decodes and returns the JSON body.
+
+  Raises `ExUnit.AssertionError` if the status code or content type
+  does not match.
+
+  ## Parameters
+
+    - `conn` - The response connection
+    - `status` - The expected HTTP status code
+
+  ## Returns
+
+  The decoded JSON body as a map.
+
+  ## Examples
+
+      ```elixir
+      data = json_response(conn, 200)
+      assert data["users"] == []
+
+      data = json_response(conn, 201)
+      assert data["id"]
+      ```
+  """
   def json_response(conn, status) do
     unless conn.status == status do
       raise ExUnit.AssertionError,
@@ -79,7 +179,18 @@ defmodule Hibana.TestHelpers do
     Jason.decode!(conn.resp_body)
   end
 
-  @doc "Assert and return HTML response"
+  @doc """
+  Asserts the response has the expected status code and returns the HTML body.
+
+  ## Parameters
+
+    - `conn` - The response connection
+    - `status` - The expected HTTP status code
+
+  ## Returns
+
+  The response body as a string.
+  """
   def html_response(conn, status) do
     unless conn.status == status do
       raise ExUnit.AssertionError,
@@ -89,7 +200,18 @@ defmodule Hibana.TestHelpers do
     conn.resp_body
   end
 
-  @doc "Assert and return text response"
+  @doc """
+  Asserts the response has the expected status code and returns the text body.
+
+  ## Parameters
+
+    - `conn` - The response connection
+    - `status` - The expected HTTP status code
+
+  ## Returns
+
+  The response body as a string.
+  """
   def text_response(conn, status) do
     unless conn.status == status do
       raise ExUnit.AssertionError,
@@ -99,7 +221,24 @@ defmodule Hibana.TestHelpers do
     conn.resp_body
   end
 
-  @doc "Assert redirect"
+  @doc """
+  Asserts the response is a redirect (301 or 302) to the specified path.
+
+  ## Parameters
+
+    - `conn` - The response connection
+    - `to:` - The expected redirect URL
+
+  ## Returns
+
+  The `location` header value.
+
+  ## Examples
+
+      ```elixir
+      assert_redirect(conn, to: "/login")
+      ```
+  """
   def assert_redirect(conn, to: path) do
     unless conn.status in [301, 302] do
       raise ExUnit.AssertionError,
@@ -116,7 +255,23 @@ defmodule Hibana.TestHelpers do
     location
   end
 
-  @doc "Build a test connection"
+  @doc """
+  Builds a test connection with the given method, path, body, and headers.
+
+  For POST, PUT, and PATCH requests with a map body, automatically sets
+  `Content-Type: application/json`.
+
+  ## Parameters
+
+    - `method` - The HTTP method atom (`:get`, `:post`, `:put`, `:patch`, `:delete`)
+    - `path` - The request path
+    - `body` - The request body (map is JSON-encoded) (default: `%{}`)
+    - `headers` - List of `{key, value}` header tuples (default: `[]`)
+
+  ## Returns
+
+  A `Plug.Conn` struct.
+  """
   def build_conn(method, path, body \\ %{}, headers \\ []) do
     conn = Plug.Test.conn(method, path, encode_body(body))
 
@@ -133,12 +288,47 @@ defmodule Hibana.TestHelpers do
     end
   end
 
-  @doc "Add authorization header"
+  @doc """
+  Adds a Bearer token authorization header to the connection.
+
+  ## Parameters
+
+    - `conn` - The test connection
+    - `token` - The Bearer token string
+
+  ## Returns
+
+  The connection with the `authorization` header set.
+
+  ## Examples
+
+      ```elixir
+      conn = get("/protected") |> with_auth("eyJhbGci...")
+      ```
+  """
   def with_auth(conn, token) do
     Plug.Conn.put_req_header(conn, "authorization", "Bearer #{token}")
   end
 
-  @doc "Add basic auth header"
+  @doc """
+  Adds a Basic authentication header to the connection.
+
+  ## Parameters
+
+    - `conn` - The test connection
+    - `username` - The username
+    - `password` - The password
+
+  ## Returns
+
+  The connection with the `authorization` header set to `Basic <encoded>`.
+
+  ## Examples
+
+      ```elixir
+      conn = get("/admin") |> with_basic_auth("admin", "secret")
+      ```
+  """
   def with_basic_auth(conn, username, password) do
     encoded = Base.encode64("#{username}:#{password}")
     Plug.Conn.put_req_header(conn, "authorization", "Basic #{encoded}")
