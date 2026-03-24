@@ -10,7 +10,19 @@ echo ""
 
 publish_app() {
   local app="$1"
-  echo ">>> Publishing $app..."
+
+  # Get version from mix.exs
+  local version
+  version=$(grep '@version' "$ROOT/apps/$app/mix.exs" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+  # Check if already published
+  local replace_flag=""
+  if mix hex.info "$app" "$version" &>/dev/null; then
+    echo ">>> $app@$version already published — updating with --replace"
+    replace_flag="--replace"
+  else
+    echo ">>> Publishing $app@$version (new)"
+  fi
 
   rm -rf "$WORK"
   mkdir -p "$WORK/lib"
@@ -22,16 +34,13 @@ publish_app() {
 
   cd "$WORK"
   mix deps.get
-  mix hex.publish
+  mix hex.publish $replace_flag
 
   rm -rf "$WORK"
   echo ""
 }
 
-echo ">>> hibana core already published at https://hex.pm/packages/hibana/0.1.0"
-echo "    Skipping (use 'mix hex.publish --replace' to update)"
-echo ""
-
+publish_app "hibana"
 publish_app "hibana_plugins"
 publish_app "hibana_generator"
 publish_app "hibana_ecto"
