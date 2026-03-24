@@ -31,6 +31,8 @@ publish_app() {
   [ -f "$ROOT/apps/$app/LICENSE" ] && cp "$ROOT/apps/$app/LICENSE" "$WORK/"
   [ -f "$ROOT/apps/$app/README.md" ] && cp "$ROOT/apps/$app/README.md" "$WORK/"
   [ -f "$ROOT/apps/$app/.formatter.exs" ] && cp "$ROOT/apps/$app/.formatter.exs" "$WORK/"
+  # Copy extras from umbrella root if not in app dir
+  [ ! -f "$WORK/CHANGELOG.md" ] && [ -f "$ROOT/CHANGELOG.md" ] && cp "$ROOT/CHANGELOG.md" "$WORK/"
 
   cd "$WORK"
   mix deps.get

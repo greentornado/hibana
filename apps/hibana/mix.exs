@@ -61,10 +61,7 @@ defmodule Hibana.Core.MixProject do
       main: "Hibana",
       source_ref: "v#{@version}",
       source_url: @source_url,
-      extras: [
-        "../../README.md": [title: "Overview"],
-        "../../CHANGELOG.md": [title: "Changelog"]
-      ],
+      extras: extras(),
       groups_for_modules: [
         Core: [
           Hibana.Router,
@@ -104,6 +101,30 @@ defmodule Hibana.Core.MixProject do
         ]
       ]
     ]
+  end
+
+  defp extras do
+    # Use local README.md when publishing (copied to app dir),
+    # fall back to umbrella root for development
+    readme =
+      cond do
+        File.exists?("README.md") -> "README.md"
+        File.exists?("../../README.md") -> "../../README.md"
+        true -> nil
+      end
+
+    changelog =
+      cond do
+        File.exists?("CHANGELOG.md") -> "CHANGELOG.md"
+        File.exists?("../../CHANGELOG.md") -> "../../CHANGELOG.md"
+        true -> nil
+      end
+
+    [
+      readme && {String.to_atom(readme), [title: "Overview"]},
+      changelog && {String.to_atom(changelog), [title: "Changelog"]}
+    ]
+    |> Enum.reject(&is_nil/1)
   end
 
   defp deps do
