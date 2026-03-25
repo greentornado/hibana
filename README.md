@@ -225,6 +225,11 @@ In the Japanese blacksmith tradition, the spark is the beginning of everything. 
 | `chess` | 4011 | Chess game server with WebSocket |
 | `tictactoe` | 4012 | Tic-Tac-Toe with AI (minimax) and WebSocket |
 | `telegram_bot` | 4013 | Telegram bot with webhook |
+| `url_shortener` | 4020 | URL shortener with analytics and click tracking |
+| `realtime_chat` | 4021 | Multi-room WebSocket chat with presence |
+| `pastebin` | 4022 | Code sharing with expiry, I18n, and SEO |
+| `webhook_relay` | 4023 | Webhook receiver with queue, retry, and HMAC signing |
+| `system_monitor` | 4024 | Live BEAM metrics dashboard via SSE |
 
 ```bash
 cd sample_apps/hello_world && mix deps.get && mix run
