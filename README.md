@@ -230,6 +230,11 @@ In the Japanese blacksmith tradition, the spark is the beginning of everything. 
 | `pastebin` | 4022 | Code sharing with expiry, I18n, and SEO |
 | `webhook_relay` | 4023 | Webhook receiver with queue, retry, and HMAC signing |
 | `system_monitor` | 4024 | Live BEAM metrics dashboard via SSE |
+| `quiz_game` | 4030 | Kahoot-style multiplayer quiz with WebSocket |
+| `drawing_board` | 4031 | Collaborative canvas drawing with WebSocket |
+| `live_poll` | 4032 | Real-time voting with SSE live results |
+| `auction` | 4033 | Live auction with bidding, countdown, anti-sniping |
+| `typing_race` | 4034 | Multiplayer typing speed race with WPM tracking |
 
 ```bash
 cd sample_apps/hello_world && mix deps.get && mix run
