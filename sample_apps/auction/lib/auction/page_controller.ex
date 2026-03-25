@@ -533,7 +533,7 @@ defmodule Auction.PageController do
       <div class="toast-container" id="toasts"></div>
 
       <script>
-        var AUCTION_ID = '#{id}';
+        var AUCTION_ID = #{Jason.encode!(id)};
         var auction = null;
         var ws = null;
         var timeRemaining = 0;

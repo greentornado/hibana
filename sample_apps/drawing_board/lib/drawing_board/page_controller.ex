@@ -213,7 +213,7 @@ defmodule DrawingBoard.PageController do
       <div id="status">Connecting...</div>
 
       <script>
-        var BOARD_ID = '#{board_id}';
+        var BOARD_ID = #{Jason.encode!(board_id)};
         var COLORS = ['#ffffff','#e94560','#ff6b6b','#feca57','#48dbfb','#0abde3','#10ac84','#a55eea'];
         var currentColor = '#ffffff';
         var brushSize = 3;

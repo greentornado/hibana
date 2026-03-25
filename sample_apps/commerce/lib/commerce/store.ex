@@ -18,19 +18,31 @@ defmodule Commerce.Store do
   end
 
   def create_product(attrs) do
-    id = generate_id()
+    price = parse_float(Map.get(attrs, "price", 0))
+    stock = parse_int(Map.get(attrs, "stock", 0))
 
-    product = %{
-      id: id,
-      name: Map.get(attrs, "name", "Unnamed"),
-      description: Map.get(attrs, "description", ""),
-      price: parse_float(Map.get(attrs, "price", 0)),
-      category: Map.get(attrs, "category", "general"),
-      stock: parse_int(Map.get(attrs, "stock", 0))
-    }
+    cond do
+      price <= 0 ->
+        {:error, "Price must be positive"}
 
-    :ets.insert(:commerce_products, {id, product})
-    {:ok, product}
+      stock < 0 ->
+        {:error, "Stock cannot be negative"}
+
+      true ->
+        id = generate_id()
+
+        product = %{
+          id: id,
+          name: Map.get(attrs, "name", "Unnamed"),
+          description: Map.get(attrs, "description", ""),
+          price: price,
+          category: Map.get(attrs, "category", "general"),
+          stock: stock
+        }
+
+        :ets.insert(:commerce_products, {id, product})
+        {:ok, product}
+    end
   end
 
   def update_product(id, attrs) do
@@ -85,19 +97,25 @@ defmodule Commerce.Store do
         product_id = Map.get(item, "product_id") || Map.get(item, :product_id)
         quantity = parse_int(Map.get(item, "quantity") || Map.get(item, :quantity, 1))
 
-        case get_product(product_id) do
-          {:ok, product} ->
-            {:ok,
-             %{
-               product_id: product.id,
-               name: product.name,
-               price: product.price,
-               quantity: quantity,
-               subtotal: product.price * quantity
-             }}
+        cond do
+          quantity <= 0 ->
+            {:error, "Quantity must be positive"}
 
-          :not_found ->
-            {:error, "Product #{product_id} not found"}
+          true ->
+            case get_product(product_id) do
+              {:ok, product} ->
+                {:ok,
+                 %{
+                   product_id: product.id,
+                   name: product.name,
+                   price: product.price,
+                   quantity: quantity,
+                   subtotal: product.price * quantity
+                 }}
+
+              :not_found ->
+                {:error, "Product #{product_id} not found"}
+            end
         end
       end)
 

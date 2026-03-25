@@ -1,9 +1,9 @@
 defmodule WebhookRelay.Router do
   use Hibana.Router.DSL
 
-  plug(Hibana.Plugins.BodyParser)
-  plug(Hibana.Plugins.ColorLogger)
-  plug(Hibana.Plugins.ErrorHandler)
+  plug Hibana.Plugins.BodyParser
+  plug Hibana.Plugins.ColorLogger
+  plug Hibana.Plugins.ErrorHandler
 
   # Receive webhooks
   post("/hooks/:channel", WebhookRelay.HookController, :receive)

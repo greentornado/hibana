@@ -35,8 +35,20 @@ defmodule WebhookRelay.DeliveryWorker do
   def handle_cast({:deliver, event_id, subscription, attempt}, state) do
     url = subscription.url
 
-    case check_circuit(state.circuits, url) do
-      :open ->
+    cond do
+      not safe_url?(url) ->
+        Logger.warning("[DeliveryWorker] Blocked delivery to private/internal URL: #{url}")
+
+        WebhookRelay.EventStore.update_delivery(
+          event_id,
+          subscription.id,
+          "blocked_private_url",
+          attempt
+        )
+
+        {:noreply, state}
+
+      check_circuit(state.circuits, url) == :open ->
         Logger.warning("[DeliveryWorker] Circuit open for #{url}, skipping delivery")
 
         WebhookRelay.EventStore.update_delivery(
@@ -48,10 +60,21 @@ defmodule WebhookRelay.DeliveryWorker do
 
         {:noreply, state}
 
-      :closed ->
+      true ->
         state = do_deliver(event_id, subscription, attempt, state)
         {:noreply, state}
     end
+  end
+
+  defp safe_url?(url) do
+    uri = URI.parse(url)
+    host = uri.host || ""
+
+    not (host in ["localhost", "127.0.0.1", "0.0.0.0", "::1"] or
+           String.starts_with?(host, "10.") or
+           String.starts_with?(host, "192.168.") or
+           String.starts_with?(host, "169.254.") or
+           Regex.match?(~r/^172\.(1[6-9]|2\d|3[01])\./, host))
   end
 
   # --- Private ---

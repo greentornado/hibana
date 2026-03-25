@@ -1,9 +1,9 @@
 defmodule RestApi.Router do
   use Hibana.Router.DSL
 
-  plug(Hibana.Plugins.BodyParser)
-  plug(Hibana.Plugins.RequestId)
-  plug(Hibana.Plugins.Logger)
+  plug Hibana.Plugins.BodyParser
+  plug Hibana.Plugins.RequestId
+  plug Hibana.Plugins.Logger
 
   get("/api/users", RestApi.UserController, :index)
   get("/api/users/:id", RestApi.UserController, :show)

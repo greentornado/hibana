@@ -477,7 +477,7 @@ defmodule TypingRace.PageController do
       </div>
 
       <script>
-        var raceCode = '#{code}';
+        var raceCode = #{Jason.encode!(code)};
         var params = new URLSearchParams(window.location.search);
         var playerName = params.get('name') || 'Anonymous';
         var isHost = params.get('host') === '1';

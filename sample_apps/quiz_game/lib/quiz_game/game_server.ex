@@ -187,6 +187,10 @@ defmodule QuizGame.GameServer do
     end
   end
 
+  def handle_info(:shutdown, state) do
+    {:stop, :normal, state}
+  end
+
   def handle_info(_msg, state) do
     {:noreply, state}
   end
@@ -231,6 +235,7 @@ defmodule QuizGame.GameServer do
         leaderboard: leaderboard
       })
 
+      Process.send_after(self(), :shutdown, 60_000)
       %{state | status: :finished, current_question: next_index, answers: %{}, timer_ref: nil}
     else
       # Next question after a short delay

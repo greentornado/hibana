@@ -31,7 +31,7 @@ defmodule RestApi.UserController do
       email: Map.get(body, "email", "unknown@example.com")
     }
 
-    json(conn, %{user: user, message: "User created"})
+    put_status(conn, 201) |> json(%{user: user, message: "User created"})
   end
 
   def update(conn) do

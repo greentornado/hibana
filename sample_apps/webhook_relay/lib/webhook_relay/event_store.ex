@@ -14,6 +14,8 @@ defmodule WebhookRelay.EventStore do
 
   def init(_) do
     :ets.new(@table, [:named_table, :ordered_set, :public, read_concurrency: true])
+    # Periodically clean up old events to prevent unbounded ETS growth
+    :timer.send_interval(300_000, :cleanup)
     {:ok, %{counter: 0}}
   end
 
@@ -96,6 +98,24 @@ defmodule WebhookRelay.EventStore do
   @doc "Get the most recent event for a channel."
   def last_event(channel) do
     list_events_for_channel(channel, 1) |> List.first()
+  end
+
+  def handle_info(:cleanup, state) do
+    cleanup_old_events(86_400)
+    {:noreply, state}
+  end
+
+  def handle_info(_msg, state) do
+    {:noreply, state}
+  end
+
+  defp cleanup_old_events(max_age_seconds) do
+    cutoff = DateTime.utc_now() |> DateTime.add(-max_age_seconds) |> DateTime.to_iso8601()
+
+    :ets.tab2list(@table)
+    |> Enum.each(fn {id, event} ->
+      if event.received_at < cutoff, do: :ets.delete(@table, id)
+    end)
   end
 
   defp generate_id do

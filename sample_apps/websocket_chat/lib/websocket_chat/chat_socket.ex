@@ -1,6 +1,10 @@
 defmodule WebsocketChat.ChatSocket do
   use Hibana.WebSocket
 
+  def upgrade(conn) do
+    Hibana.WebSocket.upgrade(conn, __MODULE__)
+  end
+
   def init(conn, _opts) do
     {:ok, conn, %{}}
   end

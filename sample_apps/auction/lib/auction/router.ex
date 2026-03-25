@@ -1,7 +1,7 @@
 defmodule Auction.Router do
   use Hibana.Router.DSL
 
-  plug(Hibana.Plugins.BodyParser)
+  plug Hibana.Plugins.BodyParser
 
   # HTML pages
   get("/", Auction.PageController, :index)

@@ -1,6 +1,7 @@
 defmodule DrawingBoard do
   use Application
 
+  @impl true
   def start(_type, _args) do
     # Start pg scope for WebSocket broadcasting
     :pg.start(:drawing_board_pg)

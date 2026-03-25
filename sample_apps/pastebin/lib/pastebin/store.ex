@@ -45,6 +45,9 @@ defmodule Pastebin.Store do
     end
   end
 
+  # Note: concurrent views may lose counts due to read-modify-write race condition.
+  # For production, serialize through a GenServer or use a different ETS structure
+  # with :ets.update_counter.
   def get_and_increment_views(id) do
     case get(id) do
       {:ok, paste} ->

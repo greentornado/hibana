@@ -1,10 +1,10 @@
 defmodule Chess.Router do
   use Hibana.Router.DSL
 
-  plug(Hibana.Plugins.RequestId)
-  plug(Hibana.Plugins.CORS)
-  plug(Hibana.Plugins.ColorLogger)
-  plug(Hibana.Plugins.BodyParser)
+  plug Hibana.Plugins.RequestId
+  plug Hibana.Plugins.CORS
+  plug Hibana.Plugins.ColorLogger
+  plug Hibana.Plugins.BodyParser
 
   post("/games", Chess.GameController, :create)
   get("/games", Chess.GameController, :index)

@@ -1,9 +1,9 @@
 defmodule LivePoll.Router do
   use Hibana.Router.DSL
 
-  plug(Hibana.Plugins.BodyParser)
-  plug(Hibana.Plugins.RequestId)
-  plug(Hibana.Plugins.Logger)
+  plug Hibana.Plugins.BodyParser
+  plug Hibana.Plugins.RequestId
+  plug Hibana.Plugins.Logger
 
   # HTML pages
   get("/", LivePoll.PageController, :index)

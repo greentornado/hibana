@@ -5,6 +5,8 @@ defmodule Chess.GameServer do
 
   use GenServer
 
+  @inactivity_timeout 600_000
+
   # --- Client API ---
 
   def start_link(game_id) do
@@ -48,18 +50,18 @@ defmodule Chess.GameServer do
       created_at: DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    {:ok, state}
+    {:ok, state, @inactivity_timeout}
   end
 
   @impl true
   def handle_call(:get_state, _from, state) do
-    {:reply, {:ok, public_state(state)}, state}
+    {:reply, {:ok, public_state(state)}, state, @inactivity_timeout}
   end
 
   @impl true
   def handle_call({:move, from, to}, _from, state) do
     if state.status != :playing do
-      {:reply, {:error, "Game is over"}, state}
+      {:reply, {:error, "Game is over"}, state, @inactivity_timeout}
     else
       case Chess.Board.make_move(state.board, from, to, state.turn) do
         {:ok, new_board} ->
@@ -80,10 +82,10 @@ defmodule Chess.GameServer do
           }
 
           broadcast(new_state)
-          {:reply, {:ok, public_state(new_state)}, new_state}
+          {:reply, {:ok, public_state(new_state)}, new_state, @inactivity_timeout}
 
         {:error, reason} ->
-          {:reply, {:error, reason}, state}
+          {:reply, {:error, reason}, state, @inactivity_timeout}
       end
     end
   end
@@ -97,6 +99,11 @@ defmodule Chess.GameServer do
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     {:noreply, %{state | subscribers: List.delete(state.subscribers, pid)}}
+  end
+
+  @impl true
+  def handle_info(:timeout, state) do
+    {:stop, :normal, state}
   end
 
   @impl true

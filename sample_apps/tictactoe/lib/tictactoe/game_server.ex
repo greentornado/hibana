@@ -5,6 +5,8 @@ defmodule TicTacToe.GameServer do
 
   use GenServer
 
+  @inactivity_timeout 300_000
+
   # --- Client API ---
 
   def start_link({game_id, mode}) do
@@ -49,28 +51,28 @@ defmodule TicTacToe.GameServer do
       created_at: DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    {:ok, state}
+    {:ok, state, @inactivity_timeout}
   end
 
   @impl true
   def handle_call(:get_state, _from, state) do
-    {:reply, {:ok, public_state(state)}, state}
+    {:reply, {:ok, public_state(state)}, state, @inactivity_timeout}
   end
 
   @impl true
   def handle_call({:move, position, player}, _from, state) do
     cond do
       state.status != :playing ->
-        {:reply, {:error, "Game is over"}, state}
+        {:reply, {:error, "Game is over"}, state, @inactivity_timeout}
 
       player != state.current_player ->
-        {:reply, {:error, "Not your turn. Current player: #{state.current_player}"}, state}
+        {:reply, {:error, "Not your turn. Current player: #{state.current_player}"}, state, @inactivity_timeout}
 
       position < 0 or position > 8 ->
-        {:reply, {:error, "Invalid position. Must be 0-8"}, state}
+        {:reply, {:error, "Invalid position. Must be 0-8"}, state, @inactivity_timeout}
 
       Enum.at(state.board, position) != nil ->
-        {:reply, {:error, "Position already taken"}, state}
+        {:reply, {:error, "Position already taken"}, state, @inactivity_timeout}
 
       true ->
         new_board = List.replace_at(state.board, position, player)
@@ -89,7 +91,12 @@ defmodule TicTacToe.GameServer do
         # If AI mode and game still playing and it's O's turn, make AI move
         new_state = maybe_ai_move(new_state)
 
-        {:reply, {:ok, public_state(new_state)}, new_state}
+        # Schedule shutdown if game is over
+        if new_state.status in [:won, :draw] do
+          Process.send_after(self(), :shutdown, 60_000)
+        end
+
+        {:reply, {:ok, public_state(new_state)}, new_state, @inactivity_timeout}
     end
   end
 
@@ -102,6 +109,16 @@ defmodule TicTacToe.GameServer do
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     {:noreply, %{state | subscribers: List.delete(state.subscribers, pid)}}
+  end
+
+  @impl true
+  def handle_info(:timeout, state) do
+    {:stop, :normal, state}
+  end
+
+  @impl true
+  def handle_info(:shutdown, state) do
+    {:stop, :normal, state}
   end
 
   @impl true

@@ -1,9 +1,9 @@
 defmodule RealtimeChat.Router do
   use Hibana.Router.DSL
 
-  plug(Hibana.Plugins.BodyParser)
-  plug(Hibana.Plugins.ColorLogger)
-  plug(Hibana.Plugins.ErrorHandler)
+  plug Hibana.Plugins.BodyParser
+  plug Hibana.Plugins.ColorLogger
+  plug Hibana.Plugins.ErrorHandler
 
   # HTML page
   get("/", RealtimeChat.PageController, :index)

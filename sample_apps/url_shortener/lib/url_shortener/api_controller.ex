@@ -5,7 +5,7 @@ defmodule UrlShortener.ApiController do
     url = conn.body_params["url"]
 
     if is_nil(url) or url == "" do
-      conn |> Plug.Conn.put_status(400) |> json(%{error: "url is required"})
+      conn |> put_status(400) |> json(%{error: "url is required"})
     else
       # Manual rate limiting: 30 requests per minute
       opts = Hibana.Plugins.RateLimiter.init(max_requests: 30, window_ms: 60_000)
@@ -14,15 +14,21 @@ defmodule UrlShortener.ApiController do
       if limited.halted do
         limited
       else
-        {:ok, code} = UrlShortener.Store.create(url)
+        case UrlShortener.Store.create(url) do
+          {:ok, code} ->
+            limited
+            |> put_status(201)
+            |> json(%{
+              code: code,
+              short_url: "http://localhost:4020/#{code}",
+              original_url: url
+            })
 
-        limited
-        |> Plug.Conn.put_status(201)
-        |> json(%{
-          code: code,
-          short_url: "http://localhost:4020/#{code}",
-          original_url: url
-        })
+          {:error, reason} ->
+            limited
+            |> put_status(400)
+            |> json(%{error: reason})
+        end
       end
     end
   end
@@ -48,7 +54,7 @@ defmodule UrlShortener.ApiController do
         json(conn, Map.merge(url_data, %{recent_clicks: Enum.take(clicks, 10), referrers: referrers}))
 
       :not_found ->
-        conn |> Plug.Conn.put_status(404) |> json(%{error: "URL not found"})
+        conn |> put_status(404) |> json(%{error: "URL not found"})
     end
   end
 
@@ -61,7 +67,7 @@ defmodule UrlShortener.ApiController do
         json(conn, %{deleted: true, code: code})
 
       :not_found ->
-        conn |> Plug.Conn.put_status(404) |> json(%{error: "URL not found"})
+        conn |> put_status(404) |> json(%{error: "URL not found"})
     end
   end
 end

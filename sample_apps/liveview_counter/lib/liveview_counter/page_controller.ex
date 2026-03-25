@@ -4,8 +4,10 @@ defmodule LiveviewCounter.PageController do
   def index(conn) do
     html(conn, """
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Hibana LiveView Counter</title>
       <style>
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; text-align: center; }
@@ -49,7 +51,7 @@ defmodule LiveviewCounter.PageController do
         const startBtn = document.getElementById("start-auto");
         const stopBtn = document.getElementById("stop-auto");
 
-        const ws = new WebSocket("ws://localhost:4004/live/counter");
+        const ws = new WebSocket("ws://" + location.host + "/live/counter");
 
         ws.onopen = () => { statusEl.textContent = "Connected"; };
         ws.onclose = () => { statusEl.textContent = "Disconnected"; };

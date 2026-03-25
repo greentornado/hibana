@@ -334,7 +334,7 @@
     };
 
     const API = window.location.origin;
-    const WS_BASE = 'ws://' + window.location.host;
+    const WS_BASE = (location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host;
 
     // --- Utility: safe text escaping ---
     function escapeHtml(text) {

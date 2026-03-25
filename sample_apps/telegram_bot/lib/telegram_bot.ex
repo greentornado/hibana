@@ -6,6 +6,7 @@ defmodule TelegramBot do
   Receives messages via webhook and responds using the Telegram Bot API.
   """
 
+  @impl true
   def start(_type, _args) do
     TelegramBot.MessageLog.init()
 

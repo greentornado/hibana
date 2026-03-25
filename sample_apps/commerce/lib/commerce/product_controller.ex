@@ -35,6 +35,9 @@ defmodule Commerce.ProductController do
     case Commerce.Store.create_product(body) do
       {:ok, product} ->
         put_status(conn, 201) |> json(%{product: product, message: "Product created"})
+
+      {:error, reason} ->
+        put_status(conn, 400) |> json(%{error: reason})
     end
   end
 

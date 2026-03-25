@@ -4,8 +4,10 @@ defmodule BackgroundJobs.PageController do
   def index(conn) do
     html(conn, """
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Background Jobs Demo</title>
       <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; }
@@ -116,7 +118,7 @@ defmodule BackgroundJobs.PageController do
   end
 
   def send_email(conn) do
-    %{to: to, subject: subject, body: body} = conn.body_params
+    %{"to" => to, "subject" => subject, "body" => body} = conn.body_params
 
     job_data = %{to: to, subject: subject, body: body}
     BackgroundJobs.SendEmailJob.enqueue(job_data)
@@ -125,8 +127,8 @@ defmodule BackgroundJobs.PageController do
   end
 
   def welcome_email(conn) do
-    %{email: email, delay: delay} = conn.body_params
-    delay_ms = (String.to_integer(delay) || 0) * 1000
+    %{"email" => email, "delay" => delay} = conn.body_params
+    delay_ms = (case Integer.parse(delay) do {n, _} -> n; _ -> 0 end) * 1000
 
     job_data = %{email: email}
 

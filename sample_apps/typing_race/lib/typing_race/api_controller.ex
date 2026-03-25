@@ -10,7 +10,7 @@ defmodule TypingRace.ApiController do
 
     case TypingRace.RaceManager.create_race(max_players) do
       {:ok, code} ->
-        json(conn, %{code: code, max_players: max_players})
+        put_status(conn, 201) |> json(%{code: code, max_players: max_players})
 
       {:error, reason} ->
         put_status(conn, 500) |> json(%{error: inspect(reason)})

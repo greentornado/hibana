@@ -4,8 +4,10 @@ defmodule WebsocketChat.PageController do
   def index(conn) do
     html(conn, """
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Hibana Chat</title>
       <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
@@ -23,7 +25,7 @@ defmodule WebsocketChat.PageController do
       <input type="text" id="input" placeholder="Type a message..." />
       <button id="send">Send</button>
       <script>
-        const ws = new WebSocket("ws://localhost:4003/chat");
+        const ws = new WebSocket("ws://" + location.host + "/chat");
         const messages = document.getElementById("messages");
         const input = document.getElementById("input");
         const send = document.getElementById("send");

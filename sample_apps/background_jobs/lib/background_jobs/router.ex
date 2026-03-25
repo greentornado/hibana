@@ -1,7 +1,7 @@
 defmodule BackgroundJobs.Router do
   use Hibana.Router.DSL
 
-  plug(Hibana.Plugins.BodyParser)
+  plug Hibana.Plugins.BodyParser
 
   get("/", BackgroundJobs.PageController, :index)
   post("/jobs/send-email", BackgroundJobs.PageController, :send_email)

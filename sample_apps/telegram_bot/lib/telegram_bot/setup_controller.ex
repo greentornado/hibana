@@ -78,7 +78,11 @@ defmodule TelegramBot.SetupController do
     limit =
       case conn.params["limit"] do
         nil -> 20
-        val -> String.to_integer(val)
+        val ->
+          case Integer.parse(val) do
+            {n, _} -> n
+            :error -> 20
+          end
       end
 
     messages = TelegramBot.MessageLog.recent(limit)

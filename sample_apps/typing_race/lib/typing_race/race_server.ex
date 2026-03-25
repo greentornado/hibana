@@ -228,6 +228,10 @@ defmodule TypingRace.RaceServer do
     end
   end
 
+  def handle_info(:shutdown, state) do
+    {:stop, :normal, state}
+  end
+
   def handle_info(_msg, state) do
     {:noreply, state}
   end

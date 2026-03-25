@@ -14,7 +14,7 @@ defmodule Pastebin.PageController do
 
     html(conn, """
     <!DOCTYPE html>
-    <html><head><title>Pastebin — Hibana</title>
+    <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pastebin — Hibana</title>
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
       body{font-family:-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;padding:40px}
@@ -78,7 +78,7 @@ defmodule Pastebin.PageController do
 
         html(conn, """
         <!DOCTYPE html>
-        <html><head><title>#{esc(paste.title)} — Pastebin</title>
+        <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>#{esc(paste.title)} — Pastebin</title>
         <style>
           *{margin:0;padding:0;box-sizing:border-box}
           body{font-family:-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;padding:40px}
@@ -109,7 +109,7 @@ defmodule Pastebin.PageController do
 
       :not_found ->
         conn
-        |> Plug.Conn.put_status(404)
+        |> put_status(404)
         |> html("<h1>#{Hibana.Plugins.I18n.t(locale, "not_found")}</h1>")
     end
   end
@@ -117,7 +117,7 @@ defmodule Pastebin.PageController do
   def raw(conn) do
     case Pastebin.Store.get(conn.params["id"]) do
       {:ok, paste} -> text(conn, paste.content)
-      :not_found -> conn |> Plug.Conn.put_status(404) |> text("Not found")
+      :not_found -> conn |> put_status(404) |> text("Not found")
     end
   end
 

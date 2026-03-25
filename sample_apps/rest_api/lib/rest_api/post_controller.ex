@@ -30,6 +30,6 @@ defmodule RestApi.PostController do
       content: Map.get(body, "content", "")
     }
 
-    json(conn, %{post: post, message: "Post created"})
+    put_status(conn, 201) |> json(%{post: post, message: "Post created"})
   end
 end

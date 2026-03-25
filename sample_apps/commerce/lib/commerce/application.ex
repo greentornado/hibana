@@ -1,6 +1,7 @@
 defmodule Commerce do
   use Application
 
+  @impl true
   def start(_type, _args) do
     # Create ETS tables for product and order storage
     :ets.new(:commerce_products, [:named_table, :set, :public, read_concurrency: true])

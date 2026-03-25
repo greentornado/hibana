@@ -1,14 +1,14 @@
 defmodule Commerce.Router do
   use Hibana.Router.DSL
 
-  plug(Hibana.Plugins.RequestId)
-  plug(Hibana.Plugins.CORS)
-  plug(Hibana.Plugins.Compression)
-  plug(Hibana.Plugins.HealthCheck)
-  plug(Hibana.Plugins.Metrics)
-  plug(Hibana.Plugins.Logger)
-  plug(Hibana.Plugins.BodyParser)
-  plug(Hibana.Plugins.Session, secret: "commerce_session_secret_key_at_least_32_bytes!")
+  plug Hibana.Plugins.RequestId
+  plug Hibana.Plugins.CORS
+  plug Hibana.Plugins.Compression
+  plug Hibana.Plugins.HealthCheck
+  plug Hibana.Plugins.Metrics
+  plug Hibana.Plugins.Logger
+  plug Hibana.Plugins.BodyParser
+  plug Hibana.Plugins.Session, secret: "commerce_session_secret_key_at_least_32_bytes!"
 
   # Public auth routes
   post("/auth/register", Commerce.AuthController, :register)
@@ -25,7 +25,7 @@ defmodule Commerce.Router do
   delete("/cart", Commerce.CartController, :clear)
 
   # JWT-protected routes
-  plug(Hibana.Plugins.JWT, secret: "commerce_jwt_secret_key_at_least_32_bytes!")
+  plug Hibana.Plugins.JWT, secret: "commerce_jwt_secret_key_at_least_32_bytes!"
 
   # Protected product write routes
   post("/products", Commerce.ProductController, :create)

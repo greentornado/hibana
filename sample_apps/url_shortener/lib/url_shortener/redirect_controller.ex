@@ -23,8 +23,10 @@ defmodule UrlShortener.RedirectController do
 
     html(conn, """
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>URL Shortener — Hibana</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -101,7 +103,7 @@ defmodule UrlShortener.RedirectController do
         redirect(conn, to: url)
 
       :not_found ->
-        conn |> Plug.Conn.put_status(404) |> json(%{error: "Short URL not found"})
+        conn |> put_status(404) |> json(%{error: "Short URL not found"})
     end
   end
 end

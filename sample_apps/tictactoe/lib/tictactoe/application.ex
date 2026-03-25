@@ -1,6 +1,7 @@
 defmodule TicTacToe do
   use Application
 
+  @impl true
   def start(_type, _args) do
     children = [
       {Registry, keys: :unique, name: TicTacToe.GameRegistry},

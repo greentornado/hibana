@@ -3,11 +3,17 @@ defmodule UrlShortener.Store do
   @clicks_table :url_shortener_clicks
 
   def create(url) do
-    code = generate_code()
-    now = DateTime.utc_now() |> DateTime.to_iso8601()
-    :ets.insert(@urls_table, {code, url, now, 0, nil})
-    :ets.insert(@clicks_table, {code, []})
-    {:ok, code}
+    uri = URI.parse(url)
+
+    if uri.scheme in ["http", "https"] do
+      code = generate_code()
+      now = DateTime.utc_now() |> DateTime.to_iso8601()
+      :ets.insert(@urls_table, {code, url, now, 0, nil})
+      :ets.insert(@clicks_table, {code, []})
+      {:ok, code}
+    else
+      {:error, "Only http and https URLs are allowed"}
+    end
   end
 
   def get(code) do
@@ -37,12 +43,13 @@ defmodule UrlShortener.Store do
   def record_click(code, referrer, user_agent) do
     now = DateTime.utc_now() |> DateTime.to_iso8601()
 
-    # Increment click count and update last_clicked
-    case :ets.lookup(@urls_table, code) do
-      [{^code, url, created, clicks, _last}] ->
-        :ets.insert(@urls_table, {code, url, created, clicks + 1, now})
-      _ ->
-        :ok
+    # Atomically increment click count (position 4 in tuple) to avoid race conditions
+    try do
+      :ets.update_counter(@urls_table, code, {4, 1})
+      # Update last_clicked timestamp separately (non-critical)
+      :ets.update_element(@urls_table, code, {5, now})
+    rescue
+      ArgumentError -> :ok
     end
 
     # Record click detail (keep last 100)

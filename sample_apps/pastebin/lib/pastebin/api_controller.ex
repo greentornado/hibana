@@ -4,7 +4,7 @@ defmodule Pastebin.ApiController do
   def create(conn) do
     case Pastebin.Store.create(conn.body_params) do
       {:ok, paste} ->
-        conn |> Plug.Conn.put_status(201) |> json(%{paste: paste, url: "/p/#{paste.id}"})
+        conn |> put_status(201) |> json(%{paste: paste, url: "/p/#{paste.id}"})
     end
   end
 
@@ -16,12 +16,18 @@ defmodule Pastebin.ApiController do
   def show(conn) do
     case Pastebin.Store.get(conn.params["id"]) do
       {:ok, paste} -> json(conn, %{paste: paste})
-      :not_found -> conn |> Plug.Conn.put_status(404) |> json(%{error: "Paste not found"})
+      :not_found -> conn |> put_status(404) |> json(%{error: "Paste not found"})
     end
   end
 
   def delete_paste(conn) do
-    Pastebin.Store.delete(conn.params["id"])
-    json(conn, %{deleted: true})
+    case Pastebin.Store.get(conn.params["id"]) do
+      {:ok, _} ->
+        Pastebin.Store.delete(conn.params["id"])
+        json(conn, %{deleted: true})
+
+      :not_found ->
+        conn |> put_status(404) |> json(%{error: "Paste not found"})
+    end
   end
 end
