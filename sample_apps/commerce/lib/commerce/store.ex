@@ -104,14 +104,18 @@ defmodule Commerce.Store do
           true ->
             case get_product(product_id) do
               {:ok, product} ->
-                {:ok,
-                 %{
-                   product_id: product.id,
-                   name: product.name,
-                   price: product.price,
-                   quantity: quantity,
-                   subtotal: product.price * quantity
-                 }}
+                if quantity > product.stock do
+                  {:error, "Insufficient stock for product #{product_id}"}
+                else
+                  {:ok,
+                   %{
+                     product_id: product.id,
+                     name: product.name,
+                     price: product.price,
+                     quantity: quantity,
+                     subtotal: product.price * quantity
+                   }}
+                end
 
               :not_found ->
                 {:error, "Product #{product_id} not found"}
@@ -136,6 +140,22 @@ defmodule Commerce.Store do
         status: "pending",
         created_at: DateTime.utc_now() |> DateTime.to_iso8601()
       }
+
+      # Decrement stock for each product
+      Enum.each(order_items, fn item ->
+        case get_product(item.product_id) do
+          {:ok, product} ->
+            new_stock = product.stock - item.quantity
+
+            if new_stock >= 0 do
+              updated = %{product | stock: new_stock}
+              :ets.insert(:commerce_products, {product.id, updated})
+            end
+
+          _ ->
+            :ok
+        end
+      end)
 
       :ets.insert(:commerce_orders, {id, order})
       {:ok, order}

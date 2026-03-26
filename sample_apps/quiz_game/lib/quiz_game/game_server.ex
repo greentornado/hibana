@@ -162,6 +162,7 @@ defmodule QuizGame.GameServer do
 
   @impl true
   def handle_cast({:register_pid, name, pid}, state) do
+    Process.monitor(pid)
     players = Map.put(state.players, name, pid)
     {:noreply, %{state | players: players}}
   end
@@ -185,6 +186,14 @@ defmodule QuizGame.GameServer do
     else
       {:noreply, state}
     end
+  end
+
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    # Remove disconnected player's PID
+    players = state.players
+      |> Enum.reject(fn {_name, p} -> p == pid end)
+      |> Map.new()
+    {:noreply, %{state | players: players}}
   end
 
   def handle_info(:shutdown, state) do

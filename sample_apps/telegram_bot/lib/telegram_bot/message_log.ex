@@ -7,14 +7,6 @@ defmodule TelegramBot.MessageLog do
   @table :telegram_messages
   @max_messages 100
 
-  def init do
-    if :ets.whereis(@table) == :undefined do
-      :ets.new(@table, [:ordered_set, :public, :named_table])
-    end
-
-    :ok
-  end
-
   def log(update) do
     timestamp = System.system_time(:microsecond)
 

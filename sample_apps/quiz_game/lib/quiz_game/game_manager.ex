@@ -17,7 +17,7 @@ defmodule QuizGame.GameManager do
       {DynamicSupervisor, name: QuizGame.GameSupervisor, strategy: :one_for_one}
     ]
 
-    Supervisor.init(children, strategy: :one_for_all)
+    Supervisor.init(children, strategy: :rest_for_one)
   end
 
   @doc "Create a new game from a quiz ID and host name. Returns {:ok, code}."

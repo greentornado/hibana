@@ -3,8 +3,6 @@ defmodule Pastebin do
 
   @impl true
   def start(_type, _args) do
-    :ets.new(:pastebin_pastes, [:named_table, :set, :public])
-
     Hibana.Plugins.I18n.put_translations("en", %{
       "create_paste" => "Create Paste",
       "view_paste" => "View Paste",
@@ -29,14 +27,18 @@ defmodule Pastebin do
       "recent" => "Paste Gan Day"
     })
 
-    seed_data()
-
     children = [
+      Pastebin.TableOwner,
       Pastebin.Endpoint,
       Pastebin.Cleaner
     ]
 
-    Supervisor.start_link(children, strategy: :one_for_one, name: Pastebin.Supervisor)
+    {:ok, pid} = Supervisor.start_link(children, strategy: :one_for_one, name: Pastebin.Supervisor)
+
+    # Seed data after tables are created
+    seed_data()
+
+    {:ok, pid}
   end
 
   defp seed_data do

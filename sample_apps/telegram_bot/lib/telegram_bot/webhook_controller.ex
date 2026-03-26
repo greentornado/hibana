@@ -5,7 +5,7 @@ defmodule TelegramBot.WebhookController do
     token = conn.params["token"]
     configured_token = Application.get_env(:telegram_bot, :bot_token, "test-token")
 
-    if token != configured_token do
+    if not (is_binary(token) and is_binary(configured_token) and Plug.Crypto.secure_compare(token, configured_token)) do
       conn |> put_status(403) |> json(%{error: "Invalid token"})
     else
       update = conn.body_params

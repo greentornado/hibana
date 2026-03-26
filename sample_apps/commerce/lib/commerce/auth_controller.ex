@@ -60,9 +60,13 @@ defmodule Commerce.AuthController do
       nil ->
         put_status(conn, 401) |> json(%{error: "Invalid credentials"})
 
-      user when user.password == password ->
-        token = generate_token(user)
-        json(conn, %{token: token, user: %{id: user.id, name: user.name, email: user.email}})
+      user when is_binary(password) and is_binary(user.password) ->
+        if Plug.Crypto.secure_compare(user.password, password) do
+          token = generate_token(user)
+          json(conn, %{token: token, user: %{id: user.id, name: user.name, email: user.email}})
+        else
+          put_status(conn, 401) |> json(%{error: "Invalid credentials"})
+        end
 
       _ ->
         put_status(conn, 401) |> json(%{error: "Invalid credentials"})

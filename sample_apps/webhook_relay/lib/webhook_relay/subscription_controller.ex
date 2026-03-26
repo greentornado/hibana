@@ -24,15 +24,10 @@ defmodule WebhookRelay.SubscriptionController do
         |> json(%{error: "url is required"})
 
       true ->
-        case WebhookRelay.ChannelStore.subscribe(channel, url, secret) do
-          {:ok, subscription} ->
-            put_status(conn, 201)
-            |> json(%{subscription: subscription})
+        {:ok, subscription} = WebhookRelay.ChannelStore.subscribe(channel, url, secret)
 
-          {:error, reason} ->
-            put_status(conn, 500)
-            |> json(%{error: inspect(reason)})
-        end
+        put_status(conn, 201)
+        |> json(%{subscription: subscription})
     end
   end
 

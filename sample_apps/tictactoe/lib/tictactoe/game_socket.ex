@@ -25,9 +25,21 @@ defmodule TicTacToe.GameSocket do
   def handle_in(message, state) do
     case Jason.decode(message) do
       {:ok, %{"action" => "move", "position" => position, "player" => player}} ->
-        pos = if is_binary(position), do: String.to_integer(position), else: position
+        pos =
+          cond do
+            is_integer(position) -> position
+            is_binary(position) ->
+              case Integer.parse(position) do
+                {n, _} -> n
+                :error -> nil
+              end
+            true -> nil
+          end
 
-        if state.game_id && TicTacToe.GameServer.alive?(state.game_id) do
+        if is_nil(pos) do
+          reply = Jason.encode!(%{type: "error", message: "Invalid position value"})
+          {:reply, {:text, reply}, state}
+        else if state.game_id && TicTacToe.GameServer.alive?(state.game_id) do
           case TicTacToe.GameServer.make_move(state.game_id, pos, player) do
             {:ok, game_state} ->
               reply = Jason.encode!(%{type: "move_accepted", game: game_state})
@@ -40,6 +52,7 @@ defmodule TicTacToe.GameSocket do
         else
           reply = Jason.encode!(%{type: "error", message: "Game not found"})
           {:reply, {:text, reply}, state}
+        end
         end
 
       {:ok, %{"action" => "get_state"}} ->

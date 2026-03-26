@@ -39,11 +39,9 @@ defmodule TicTacToe.GameController do
   def show(conn) do
     id = conn.params["id"]
 
-    if TicTacToe.GameServer.alive?(id) do
-      {:ok, state} = TicTacToe.GameServer.get_state(id)
-      json(conn, %{game: state})
-    else
-      put_status(conn, 404) |> json(%{error: "Game not found"})
+    case safe_call(TicTacToe.GameServer, :get_state, [id]) do
+      {:ok, state} -> json(conn, %{game: state})
+      :error -> put_status(conn, 404) |> json(%{error: "Game not found"})
     end
   end
 
@@ -53,33 +51,51 @@ defmodule TicTacToe.GameController do
     position = Map.get(body, "position")
     player = Map.get(body, "player")
 
-    cond do
-      is_nil(position) or is_nil(player) ->
-        put_status(conn, 400) |> json(%{error: "Missing 'position' and 'player' fields"})
+    if is_nil(position) or is_nil(player) do
+      put_status(conn, 400) |> json(%{error: "Missing 'position' and 'player' fields"})
+    else
+      pos =
+        cond do
+          is_integer(position) -> position
+          is_binary(position) ->
+            case Integer.parse(position) do
+              {n, _} -> n
+              :error -> nil
+            end
+          true -> nil
+        end
 
-      not TicTacToe.GameServer.alive?(id) ->
-        put_status(conn, 404) |> json(%{error: "Game not found"})
-
-      true ->
-        pos = if is_binary(position), do: String.to_integer(position), else: position
-
-        case TicTacToe.GameServer.make_move(id, pos, player) do
+      if is_nil(pos) do
+        put_status(conn, 400) |> json(%{error: "Invalid position value"})
+      else
+        case safe_call(TicTacToe.GameServer, :make_move, [id, pos, player]) do
           {:ok, state} ->
             json(conn, %{game: state, message: "Move accepted"})
 
           {:error, reason} ->
             put_status(conn, 400) |> json(%{error: reason})
+
+          :error ->
+            put_status(conn, 404) |> json(%{error: "Game not found"})
         end
+      end
     end
   end
 
   def websocket(conn) do
     id = conn.params["id"]
 
-    if TicTacToe.GameServer.alive?(id) do
-      Hibana.WebSocket.upgrade(conn, TicTacToe.GameSocket, %{game_id: id})
-    else
-      put_status(conn, 404) |> json(%{error: "Game not found"})
+    case safe_call(TicTacToe.GameServer, :alive?, [id]) do
+      true -> Hibana.WebSocket.upgrade(conn, TicTacToe.GameSocket, %{game_id: id})
+      _ -> put_status(conn, 404) |> json(%{error: "Game not found"})
+    end
+  end
+
+  defp safe_call(mod, func, args) do
+    try do
+      apply(mod, func, args)
+    catch
+      :exit, _ -> :error
     end
   end
 

@@ -5,8 +5,8 @@ defmodule LiveviewCounter.CounterSocket do
     Hibana.WebSocket.upgrade(conn, __MODULE__)
   end
 
-  def init(_conn, _opts) do
-    {:ok, %Plug.Conn{}, %{count: 0}}
+  def init(conn, _opts) do
+    {:ok, conn, %{count: 0}}
   end
 
   def handle_in(message, state) do

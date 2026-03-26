@@ -3,10 +3,8 @@ defmodule DrawingBoard do
 
   @impl true
   def start(_type, _args) do
-    # Start pg scope for WebSocket broadcasting
-    :pg.start(:drawing_board_pg)
-
     children = [
+      %{id: :pg_scope, start: {:pg, :start_link, [:drawing_board_pg]}},
       DrawingBoard.BoardStore,
       DrawingBoard.Endpoint
     ]

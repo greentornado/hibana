@@ -8,9 +8,8 @@ defmodule TelegramBot do
 
   @impl true
   def start(_type, _args) do
-    TelegramBot.MessageLog.init()
-
     children = [
+      TelegramBot.TableOwner,
       TelegramBot.Endpoint
     ]
 

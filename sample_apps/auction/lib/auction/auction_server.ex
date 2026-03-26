@@ -110,7 +110,7 @@ defmodule Auction.AuctionServer do
         })
 
         # Notify others they've been outbid
-        broadcast_except(new_state, bidder, %{
+        broadcast(new_state, %{
           type: "outbid",
           by: bidder,
           amount: amount
@@ -122,16 +122,24 @@ defmodule Auction.AuctionServer do
 
   @impl true
   def handle_cast({:subscribe, pid}, state) do
-    Process.monitor(pid)
-    new_state = %{state | subscribers: MapSet.put(state.subscribers, pid)}
+    if MapSet.member?(state.subscribers, pid) do
+      {:noreply, state}
+    else
+      Process.monitor(pid)
+      new_state = %{state | subscribers: MapSet.put(state.subscribers, pid)}
 
-    # Send bid history to the new subscriber
-    send(pid, {:auction_msg, Jason.encode!(%{
-      type: "bid_history",
-      bids: Enum.reverse(state.bids)
-    })})
+      # Send bid history to the new subscriber
+      send(
+        pid,
+        {:auction_msg,
+         Jason.encode!(%{
+           type: "bid_history",
+           bids: Enum.reverse(state.bids)
+         })}
+      )
 
-    {:noreply, new_state}
+      {:noreply, new_state}
+    end
   end
 
   def handle_cast({:unsubscribe, pid}, state) do
@@ -192,17 +200,6 @@ defmodule Auction.AuctionServer do
     Enum.each(state.subscribers, fn pid ->
       send(pid, {:auction_msg, encoded})
     end)
-  end
-
-  defp broadcast_except(state, bidder_name, message) do
-    encoded = Jason.encode!(message)
-
-    Enum.each(state.subscribers, fn pid ->
-      # Send outbid to all — the client filters by its own name
-      send(pid, {:auction_msg, encoded})
-    end)
-
-    _ = bidder_name
   end
 
   defp public_state(state) do

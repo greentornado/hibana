@@ -43,7 +43,9 @@ defmodule RestApi.UserController do
         put_status(conn, 404) |> json(%{error: "User not found"})
 
       user ->
-        updated = Map.merge(user, body)
+        updated = user
+          |> Map.put(:name, Map.get(body, "name", user.name))
+          |> Map.put(:email, Map.get(body, "email", user.email))
         json(conn, %{user: updated, message: "User updated"})
     end
   end

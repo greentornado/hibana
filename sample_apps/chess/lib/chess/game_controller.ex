@@ -20,11 +20,9 @@ defmodule Chess.GameController do
   def show(conn) do
     id = conn.params["id"]
 
-    if Chess.GameServer.alive?(id) do
-      {:ok, state} = Chess.GameServer.get_state(id)
-      json(conn, %{game: state})
-    else
-      put_status(conn, 404) |> json(%{error: "Game not found"})
+    case safe_call(Chess.GameServer, :get_state, [id]) do
+      {:ok, state} -> json(conn, %{game: state})
+      :error -> put_status(conn, 404) |> json(%{error: "Game not found"})
     end
   end
 
@@ -34,31 +32,36 @@ defmodule Chess.GameController do
     from = Map.get(body, "from")
     to = Map.get(body, "to")
 
-    cond do
-      is_nil(from) or is_nil(to) ->
-        put_status(conn, 400) |> json(%{error: "Missing 'from' and 'to' fields"})
+    if is_nil(from) or is_nil(to) do
+      put_status(conn, 400) |> json(%{error: "Missing 'from' and 'to' fields"})
+    else
+      case safe_call(Chess.GameServer, :make_move, [id, from, to]) do
+        {:ok, state} ->
+          json(conn, %{game: state, message: "Move accepted"})
 
-      not Chess.GameServer.alive?(id) ->
-        put_status(conn, 404) |> json(%{error: "Game not found"})
+        {:error, reason} ->
+          put_status(conn, 400) |> json(%{error: reason})
 
-      true ->
-        case Chess.GameServer.make_move(id, from, to) do
-          {:ok, state} ->
-            json(conn, %{game: state, message: "Move accepted"})
-
-          {:error, reason} ->
-            put_status(conn, 400) |> json(%{error: reason})
-        end
+        :error ->
+          put_status(conn, 404) |> json(%{error: "Game not found"})
+      end
     end
   end
 
   def websocket(conn) do
     id = conn.params["id"]
 
-    if Chess.GameServer.alive?(id) do
-      Hibana.WebSocket.upgrade(conn, Chess.GameSocket, %{game_id: id})
-    else
-      put_status(conn, 404) |> json(%{error: "Game not found"})
+    case safe_call(Chess.GameServer, :alive?, [id]) do
+      true -> Hibana.WebSocket.upgrade(conn, Chess.GameSocket, %{game_id: id})
+      _ -> put_status(conn, 404) |> json(%{error: "Game not found"})
+    end
+  end
+
+  defp safe_call(mod, func, args) do
+    try do
+      apply(mod, func, args)
+    catch
+      :exit, _ -> :error
     end
   end
 end

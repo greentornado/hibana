@@ -22,15 +22,35 @@ defmodule Auction.ApiController do
     end
   end
 
+  defp parse_number(val) when is_number(val), do: val
+  defp parse_number(val) when is_binary(val) do
+    case Float.parse(val) do
+      {n, _} -> n
+      :error -> nil
+    end
+  end
+  defp parse_number(_), do: nil
+
   def create_auction(conn) do
     body = conn.body_params
 
-    params = %{
-      title: Map.get(body, "title", "Untitled Auction"),
-      description: Map.get(body, "description", ""),
-      starting_price: Map.get(body, "starting_price", 1),
-      duration_minutes: Map.get(body, "duration_minutes", 5)
-    }
+    starting_price = parse_number(Map.get(body, "starting_price", 1))
+    duration_minutes = parse_number(Map.get(body, "duration_minutes", 5))
+
+    cond do
+      is_nil(starting_price) or starting_price <= 0 ->
+        put_status(conn, 400) |> json(%{error: "starting_price must be a positive number"})
+
+      is_nil(duration_minutes) or duration_minutes <= 0 ->
+        put_status(conn, 400) |> json(%{error: "duration_minutes must be a positive number"})
+
+      true ->
+        params = %{
+          title: Map.get(body, "title", "Untitled Auction"),
+          description: Map.get(body, "description", ""),
+          starting_price: starting_price,
+          duration_minutes: duration_minutes
+        }
 
     case Auction.AuctionManager.start_auction(params) do
       {:ok, id} ->
@@ -44,6 +64,7 @@ defmodule Auction.ApiController do
 
       {:error, reason} ->
         put_status(conn, 500) |> json(%{error: "Failed to create auction", reason: inspect(reason)})
+    end
     end
   end
 

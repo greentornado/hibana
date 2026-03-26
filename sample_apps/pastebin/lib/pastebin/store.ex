@@ -7,9 +7,19 @@ defmodule Pastebin.Store do
 
     expires_in = Map.get(params, :expires_in) || Map.get(params, "expires_in")
 
+    seconds =
+      cond do
+        is_integer(expires_in) -> expires_in
+        is_binary(expires_in) and expires_in != "never" ->
+          case Integer.parse(expires_in) do
+            {n, _} -> n
+            :error -> nil
+          end
+        true -> nil
+      end
+
     expires_at =
-      if expires_in && expires_in != "never" && expires_in != 0 do
-        seconds = if is_binary(expires_in), do: String.to_integer(expires_in), else: expires_in
+      if seconds && seconds > 0 do
         DateTime.utc_now() |> DateTime.add(seconds) |> DateTime.to_iso8601()
       else
         nil

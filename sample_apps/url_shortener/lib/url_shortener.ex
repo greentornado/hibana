@@ -3,19 +3,18 @@ defmodule UrlShortener do
 
   @impl true
   def start(_type, _args) do
-    # Init ETS tables
-    :ets.new(:url_shortener_urls, [:named_table, :set, :public])
-    :ets.new(:url_shortener_clicks, [:named_table, :set, :public])
-
-    # Seed example URLs
-    seed_data()
-
     children = [
+      UrlShortener.TableOwner,
       UrlShortener.Endpoint
     ]
 
     opts = [strategy: :one_for_one, name: UrlShortener.Supervisor]
-    Supervisor.start_link(children, opts)
+    {:ok, pid} = Supervisor.start_link(children, opts)
+
+    # Seed example URLs after tables are created
+    seed_data()
+
+    {:ok, pid}
   end
 
   defp seed_data do

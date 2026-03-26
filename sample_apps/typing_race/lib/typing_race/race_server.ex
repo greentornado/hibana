@@ -190,6 +190,7 @@ defmodule TypingRace.RaceServer do
   end
 
   def handle_cast({:register_socket, name, pid}, state) do
+    Process.monitor(pid)
     {:noreply, put_in(state, [:sockets, name], pid)}
   end
 
@@ -226,6 +227,13 @@ defmodule TypingRace.RaceServer do
     else
       {:noreply, state}
     end
+  end
+
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    sockets = state.sockets
+      |> Enum.reject(fn {_name, p} -> p == pid end)
+      |> Map.new()
+    {:noreply, %{state | sockets: sockets}}
   end
 
   def handle_info(:shutdown, state) do

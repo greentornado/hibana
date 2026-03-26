@@ -5,6 +5,9 @@ defmodule Pastebin.ApiController do
     case Pastebin.Store.create(conn.body_params) do
       {:ok, paste} ->
         conn |> put_status(201) |> json(%{paste: paste, url: "/p/#{paste.id}"})
+
+      _ ->
+        conn |> put_status(422) |> json(%{error: "Failed to create paste"})
     end
   end
 

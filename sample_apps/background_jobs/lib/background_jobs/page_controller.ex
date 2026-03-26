@@ -118,26 +118,49 @@ defmodule BackgroundJobs.PageController do
   end
 
   def send_email(conn) do
-    %{"to" => to, "subject" => subject, "body" => body} = conn.body_params
+    body = conn.body_params || %{}
+    to = Map.get(body, "to")
+    subject = Map.get(body, "subject")
+    email_body = Map.get(body, "body")
 
-    job_data = %{to: to, subject: subject, body: body}
-    BackgroundJobs.SendEmailJob.enqueue(job_data)
+    if is_nil(to) or is_nil(subject) or is_nil(email_body) do
+      put_status(conn, 400) |> json(%{error: "to, subject, and body are required"})
+    else
+      job_data = %{to: to, subject: subject, body: email_body}
+      BackgroundJobs.SendEmailJob.enqueue(job_data)
 
-    json(conn, %{message: "Email job enqueued", job: job_data})
+      json(conn, %{message: "Email job enqueued", job: job_data})
+    end
   end
 
   def welcome_email(conn) do
-    %{"email" => email, "delay" => delay} = conn.body_params
-    delay_ms = (case Integer.parse(delay) do {n, _} -> n; _ -> 0 end) * 1000
+    body = conn.body_params || %{}
+    email = Map.get(body, "email")
+    delay = Map.get(body, "delay")
 
-    job_data = %{email: email}
-
-    if delay_ms > 0 do
-      BackgroundJobs.SendEmailJob.enqueue(job_data, delay: delay_ms)
-      json(conn, %{message: "Welcome email scheduled", delay_seconds: delay, job: job_data})
+    if is_nil(email) do
+      put_status(conn, 400) |> json(%{error: "email is required"})
     else
-      BackgroundJobs.SendEmailJob.enqueue(job_data)
-      json(conn, %{message: "Welcome email enqueued", job: job_data})
+      delay_ms =
+        cond do
+          is_integer(delay) -> delay
+          is_binary(delay) ->
+            case Integer.parse(delay) do
+              {n, _} -> n
+              _ -> 0
+            end
+          true -> 0
+        end * 1000
+
+      job_data = %{email: email}
+
+      if delay_ms > 0 do
+        BackgroundJobs.SendEmailJob.enqueue(job_data, delay: delay_ms)
+        json(conn, %{message: "Welcome email scheduled", delay_seconds: delay, job: job_data})
+      else
+        BackgroundJobs.SendEmailJob.enqueue(job_data)
+        json(conn, %{message: "Welcome email enqueued", job: job_data})
+      end
     end
   end
 

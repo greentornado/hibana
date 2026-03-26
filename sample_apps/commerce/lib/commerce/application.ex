@@ -3,19 +3,18 @@ defmodule Commerce do
 
   @impl true
   def start(_type, _args) do
-    # Create ETS tables for product and order storage
-    :ets.new(:commerce_products, [:named_table, :set, :public, read_concurrency: true])
-    :ets.new(:commerce_orders, [:named_table, :set, :public, read_concurrency: true])
-
-    # Seed sample products
-    seed_products()
-
     children = [
+      Commerce.TableOwner,
       Commerce.Endpoint
     ]
 
     opts = [strategy: :one_for_one, name: Commerce.Supervisor]
-    Supervisor.start_link(children, opts)
+    {:ok, pid} = Supervisor.start_link(children, opts)
+
+    # Seed sample products after tables are created
+    seed_products()
+
+    {:ok, pid}
   end
 
   defp seed_products do
