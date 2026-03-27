@@ -67,13 +67,15 @@ defmodule Hibana.Plugins.DistributedRateLimiter do
 
   defp get_local_count(key, window) do
     now = System.system_time(:millisecond)
-    cutoff = now - window
 
     case :ets.lookup(:distributed_rate_limiter, key) do
-      [{^key, timestamps}] ->
-        valid = Enum.filter(timestamps, &(&1 > cutoff))
-        :ets.insert(:distributed_rate_limiter, {key, valid})
-        length(valid)
+      [{^key, count, window_start}] when now - window_start < window ->
+        count
+
+      [{^key, _count, _window_start}] ->
+        # Window expired, reset
+        :ets.insert(:distributed_rate_limiter, {key, 0, now})
+        0
 
       _ ->
         0
@@ -84,11 +86,11 @@ defmodule Hibana.Plugins.DistributedRateLimiter do
     now = System.system_time(:millisecond)
 
     case :ets.lookup(:distributed_rate_limiter, key) do
-      [{^key, timestamps}] ->
-        :ets.insert(:distributed_rate_limiter, {key, [now | timestamps]})
+      [{^key, _count, _window_start}] ->
+        :ets.update_counter(:distributed_rate_limiter, key, {2, 1})
 
       _ ->
-        :ets.insert(:distributed_rate_limiter, {key, [now]})
+        :ets.insert(:distributed_rate_limiter, {key, 1, now})
     end
   end
 

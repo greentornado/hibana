@@ -96,10 +96,10 @@ defmodule Hibana.EventStore do
     table_name = Keyword.get(opts, :table_name, :hibana_event_store)
 
     events_table =
-      :ets.new(table_name, [:ordered_set, :private])
+      :ets.new(table_name, [:ordered_set, :protected])
 
     aggregates_table =
-      :ets.new(:"#{table_name}_aggregates", [:set, :private])
+      :ets.new(:"#{table_name}_aggregates", [:set, :protected])
 
     state = %{
       events_table: events_table,
@@ -133,7 +133,7 @@ defmodule Hibana.EventStore do
             [] -> []
           end
 
-        :ets.insert(acc.aggregates_table, {aggregate_id, existing ++ [seq]})
+        :ets.insert(acc.aggregates_table, {aggregate_id, [seq | existing]})
 
         {stored_event, %{acc | sequence: seq}}
       end)
@@ -161,7 +161,9 @@ defmodule Hibana.EventStore do
     events =
       case :ets.lookup(state.aggregates_table, aggregate_id) do
         [{_, seqs}] ->
-          Enum.map(seqs, fn seq ->
+          seqs
+          |> Enum.reverse()
+          |> Enum.map(fn seq ->
             case :ets.lookup(state.events_table, seq) do
               [{_, event}] -> event
               [] -> nil
@@ -178,7 +180,8 @@ defmodule Hibana.EventStore do
 
   def handle_call({:subscribe, pattern, pid}, _from, state) do
     ref = Process.monitor(pid)
-    subscriber = %{pid: pid, pattern: pattern, ref: ref}
+    compiled_regex = compile_pattern(pattern)
+    subscriber = %{pid: pid, pattern: pattern, compiled_regex: compiled_regex, ref: ref}
     {:reply, :ok, %{state | subscribers: [subscriber | state.subscribers]}}
   end
 
@@ -226,7 +229,7 @@ defmodule Hibana.EventStore do
   # --- Private ---
 
   defp get_all_events(table) do
-    :ets.tab2list(table)
+    :ets.select(table, [{{:"$1", :"$2"}, [], [{{:"$1", :"$2"}}]}])
     |> Enum.sort_by(fn {seq, _} -> seq end)
     |> Enum.map(fn {_, event} -> event end)
   end
@@ -234,19 +237,19 @@ defmodule Hibana.EventStore do
   defp notify_subscribers(subscribers, event) do
     event_type = Map.get(event, :type, "")
 
-    Enum.each(subscribers, fn %{pid: pid, pattern: pattern} ->
-      if matches_pattern?(event_type, pattern) do
+    Enum.each(subscribers, fn %{pid: pid, compiled_regex: regex} ->
+      if Regex.match?(regex, to_string(event_type)) do
         send(pid, {:event, event})
       end
     end)
   end
 
-  defp matches_pattern?(event_type, pattern) do
+  defp compile_pattern(pattern) do
     regex_pattern =
       pattern
       |> Regex.escape()
       |> String.replace("\\*", ".*")
 
-    Regex.match?(~r/^#{regex_pattern}$/, to_string(event_type))
+    Regex.compile!("^#{regex_pattern}$")
   end
 end

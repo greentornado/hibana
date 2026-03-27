@@ -136,7 +136,7 @@ defmodule Hibana.Plugins.DevErrorPage do
     <style>body{font-family:monospace;background:#1a1a2e;color:#e0e0e0;padding:40px;}
     h1{color:#e74c3c;}pre{background:#2a2a4a;padding:16px;border-radius:4px;overflow:auto;}</style></head>
     <body><h1>500 -- Internal Server Error</h1>
-    <pre>#{conn.method} #{conn.request_path}\nStatus: #{conn.status}</pre>
+    <pre>#{html_escape(conn.method)} #{html_escape(conn.request_path)}\nStatus: #{conn.status}</pre>
     </body></html>
     """
   end
@@ -171,14 +171,14 @@ defmodule Hibana.Plugins.DevErrorPage do
   defp format_request(conn) do
     headers =
       conn.req_headers
-      |> Enum.map(fn {k, v} -> "<tr><td>#{k}</td><td>#{html_escape(v)}</td></tr>" end)
+      |> Enum.map(fn {k, v} -> "<tr><td>#{html_escape(k)}</td><td>#{html_escape(v)}</td></tr>" end)
       |> Enum.join()
 
     """
     <table class="req-table">
       <tr><td>Method</td><td><span class="badge badge-method">#{conn.method}</span></td></tr>
-      <tr><td>Path</td><td>#{conn.request_path}</td></tr>
-      <tr><td>Query</td><td>#{conn.query_string}</td></tr>
+      <tr><td>Path</td><td>#{html_escape(conn.request_path)}</td></tr>
+      <tr><td>Query</td><td>#{html_escape(conn.query_string)}</td></tr>
       <tr><td>Remote IP</td><td>#{conn.remote_ip |> Tuple.to_list() |> Enum.join(".")}</td></tr>
       #{headers}
     </table>

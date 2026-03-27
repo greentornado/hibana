@@ -111,7 +111,36 @@ defmodule Hibana.CircuitBreaker do
       ```
   """
   def call(name, fun) do
-    GenServer.call(name, {:call, fun}, 30_000)
+    case GenServer.call(name, :check_state) do
+      {:ok, :closed} ->
+        execute_and_report(name, fun)
+
+      {:ok, :half_open} ->
+        execute_and_report(name, fun)
+
+      {:error, :circuit_open} ->
+        {:error, :circuit_open}
+    end
+  end
+
+  defp execute_and_report(name, fun) do
+    try do
+      result = fun.()
+      GenServer.call(name, {:report_result, :success})
+      {:ok, result}
+    rescue
+      e ->
+        GenServer.call(name, {:report_result, :failure})
+        {:error, e}
+    catch
+      :exit, reason ->
+        GenServer.call(name, {:report_result, :failure})
+        {:error, reason}
+
+      :throw, value ->
+        GenServer.call(name, {:report_result, :failure})
+        {:error, {:throw, value}}
+    end
   end
 
   @doc """
@@ -160,22 +189,27 @@ defmodule Hibana.CircuitBreaker do
     GenServer.call(name, :reset)
   end
 
-  def handle_call({:call, fun}, _from, state) do
+  def handle_call(:check_state, _from, state) do
     case state.state do
       :open ->
         if time_elapsed?(state.last_failure, state.timeout) do
-          # Try half-open
-          try_call(fun, %{state | state: :half_open, success_count: 0})
+          new_state = %{state | state: :half_open, success_count: 0}
+          {:reply, {:ok, :half_open}, new_state}
         else
           {:reply, {:error, :circuit_open}, state}
         end
 
-      :half_open ->
-        try_call(fun, state)
-
-      :closed ->
-        try_call(fun, state)
+      other ->
+        {:reply, {:ok, other}, state}
     end
+  end
+
+  def handle_call({:report_result, :success}, _from, state) do
+    {:reply, :ok, handle_success_result(state)}
+  end
+
+  def handle_call({:report_result, :failure}, _from, state) do
+    {:reply, :ok, handle_failure_result(state)}
   end
 
   def handle_call(:status, _from, state) do
@@ -197,26 +231,6 @@ defmodule Hibana.CircuitBreaker do
       {:noreply, %{state | state: :half_open, success_count: 0}}
     else
       {:noreply, state}
-    end
-  end
-
-  defp try_call(fun, state) do
-    try do
-      result = fun.()
-      new_state = handle_success_result(state)
-      {:reply, {:ok, result}, new_state}
-    rescue
-      e ->
-        new_state = handle_failure_result(state)
-        {:reply, {:error, e}, new_state}
-    catch
-      :exit, reason ->
-        new_state = handle_failure_result(state)
-        {:reply, {:error, reason}, new_state}
-
-      :throw, value ->
-        new_state = handle_failure_result(state)
-        {:reply, {:error, {:throw, value}}, new_state}
     end
   end
 

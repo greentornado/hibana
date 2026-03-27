@@ -97,23 +97,37 @@ defmodule Mix.Tasks.Gen.Model do
     end
   end
 
+  @valid_types ~w(string integer float boolean date datetime naive_datetime utc_datetime time binary id uuid decimal map array references)a
+
   defp parse_fields(field_args) do
     Enum.map(field_args, fn field ->
       case String.split(field, ":") do
         [name] -> {name, :string, []}
-        [name, type] -> {name, String.to_atom(type), []}
-        [name, type | options] -> {name, String.to_atom(type), parse_options(options)}
+        [name, type] -> {name, safe_type(type), []}
+        [name, type | options] -> {name, safe_type(type), parse_options(options)}
       end
     end)
   end
 
+  defp safe_type(type) do
+    atom = String.to_atom(type)
+    if atom in @valid_types, do: atom, else: raise("Unknown field type: #{type}. Valid types: #{inspect(@valid_types)}")
+  end
+
+  @valid_options ~w(null default size precision scale primary_key unique index)a
+
   defp parse_options(options) do
     Enum.map(options, fn opt ->
       case String.split(opt, ":") do
-        [key] -> {String.to_atom(key), true}
-        [key, val] -> {String.to_atom(key), parse_value(val)}
+        [key] -> {safe_option(key), true}
+        [key, val] -> {safe_option(key), parse_value(val)}
       end
     end)
+  end
+
+  defp safe_option(key) do
+    atom = String.to_atom(key)
+    if atom in @valid_options, do: atom, else: raise("Unknown option: #{key}. Valid options: #{inspect(@valid_options)}")
   end
 
   defp parse_value("true"), do: true

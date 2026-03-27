@@ -139,31 +139,29 @@ defmodule Hibana.Plugins.RateLimiter do
 
   defp check_rate(key, max_requests, window_ms) do
     ensure_table_exists()
+    now = System.system_time(:millisecond)
 
     case :ets.lookup(:rate_limiter, key) do
-      [{^key, _max, last_refill, tokens}] ->
-        now = System.system_time(:millisecond)
-        elapsed = now - last_refill
+      [{^key, _max, last_refill, _tokens}] when now - last_refill >= window_ms ->
+        # Window expired, reset with one token consumed
+        :ets.insert(:rate_limiter, {key, max_requests, now, max_requests - 1})
+        {true, max_requests - 1}
 
-        if elapsed >= window_ms do
-          new_tokens = max_requests - 1
-          :ets.insert(:rate_limiter, {key, max_requests, now, new_tokens})
+      [{^key, _max, _last_refill, _tokens}] ->
+        # Atomic decrement: {Position, Incr, Threshold, SetValue}
+        # Decrements tokens (pos 4) by 1, but if result would go below 0, sets to 0
+        new_tokens = :ets.update_counter(:rate_limiter, key, {4, -1, 0, 0})
+
+        if new_tokens > 0 do
           {true, new_tokens}
         else
-          if tokens > 0 do
-            :ets.insert(:rate_limiter, {key, max_requests, last_refill, tokens - 1})
-            {true, tokens - 1}
-          else
-            {false, 0}
-          end
+          # new_tokens == 0 means we hit the floor; token was already at 0 before decrement
+          {false, 0}
         end
 
       _ ->
-        :ets.insert(
-          :rate_limiter,
-          {key, max_requests, System.system_time(:millisecond), max_requests - 1}
-        )
-
+        # First request for this key
+        :ets.insert(:rate_limiter, {key, max_requests, now, max_requests - 1})
         {true, max_requests - 1}
     end
   end

@@ -44,7 +44,7 @@ defmodule Mix.Tasks.Bench do
     routes = opts |> Keyword.get(:routes, "/") |> String.split(",") |> Enum.map(&String.trim/1)
     concurrency = Keyword.get(opts, :concurrency, 1)
     duration = Keyword.get(opts, :duration, 3)
-    method = opts |> Keyword.get(:method, "GET") |> String.downcase() |> String.to_atom()
+    method = opts |> Keyword.get(:method, "GET") |> String.downcase() |> parse_http_method()
 
     router =
       case Keyword.get(opts, :router) do
@@ -179,4 +179,13 @@ defmodule Mix.Tasks.Bench do
   end
 
   defp return, do: :ok
+
+  defp parse_http_method("get"), do: :get
+  defp parse_http_method("post"), do: :post
+  defp parse_http_method("put"), do: :put
+  defp parse_http_method("patch"), do: :patch
+  defp parse_http_method("delete"), do: :delete
+  defp parse_http_method("head"), do: :head
+  defp parse_http_method("options"), do: :options
+  defp parse_http_method(other), do: raise("Unknown HTTP method: #{other}")
 end

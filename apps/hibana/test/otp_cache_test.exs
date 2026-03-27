@@ -62,7 +62,7 @@ defmodule Hibana.OTPCacheTest do
 
     test "returns nil for expired key", %{name: name} do
       Hibana.OTPCache.put(name, :expired, "value", ttl: 10)
-      Process.sleep(20)
+      Process.sleep(50)
       assert Hibana.OTPCache.get(name, :expired) == nil
     end
 
@@ -127,7 +127,7 @@ defmodule Hibana.OTPCacheTest do
 
     test "returns false for expired key", %{name: name} do
       Hibana.OTPCache.put(name, :expired, "value", ttl: 10)
-      Process.sleep(20)
+      Process.sleep(50)
       assert Hibana.OTPCache.exists?(name, :expired) == false
     end
 
@@ -160,7 +160,7 @@ defmodule Hibana.OTPCacheTest do
     test "shows expired entries as invalid", %{name: name} do
       Hibana.OTPCache.put(name, :valid, "value")
       Hibana.OTPCache.put(name, :expired, "value", ttl: 10)
-      Process.sleep(20)
+      Process.sleep(50)
       stats = Hibana.OTPCache.stats(name)
       assert stats.valid < stats.total
     end

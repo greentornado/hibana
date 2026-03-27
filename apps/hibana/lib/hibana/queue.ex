@@ -79,22 +79,26 @@ defmodule Hibana.Queue do
     now = System.system_time(:millisecond)
 
     # First, promote scheduled jobs that are ready
-    scheduled = :ets.match_object(@ets_table, {{:_, :_, :_}, :_, :_, :_, {:scheduled, :_}})
+    scheduled =
+      :ets.select(@ets_table, [
+        {{{:_, :_, :_}, :_, :_, :_, {:scheduled, :"$1"}},
+         [{:"=<", :"$1", now}],
+         [:"$_"]}
+      ])
 
     Enum.each(scheduled, fn {key, inserted, retry, max, {:scheduled, at}} ->
-      if now >= at do
-        :ets.insert(@ets_table, {key, inserted, retry, max, {:available, at}})
-      end
+      :ets.insert(@ets_table, {key, inserted, retry, max, {:available, at}})
     end)
 
-    # Then process all available jobs
-    available = :ets.match_object(@ets_table, {{:_, :_, :_}, :_, :_, :_, {:available, :_}})
+    # Then process all available jobs that are ready
+    available =
+      :ets.select(@ets_table, [
+        {{{:_, :_, :_}, :_, :_, :_, {:available, :"$1"}},
+         [{:"=<", :"$1", now}],
+         [:"$_"]}
+      ])
 
-    Enum.each(available, fn {_key, _inserted, _retry, _max, {:available, ready_at}} = job ->
-      if now >= ready_at do
-        execute_job(job)
-      end
-    end)
+    Enum.each(available, fn job -> execute_job(job) end)
   end
 
   defp execute_job({{mod, args, id}, _inserted_at, retry, max_retries, _status}) do
@@ -236,10 +240,14 @@ defmodule Hibana.Queue do
     total = :ets.info(@ets_table, :size)
 
     available =
-      length(:ets.match_object(@ets_table, {{:_, :_, :_}, :_, :_, :_, {:available, :_}}))
+      :ets.select_count(@ets_table, [
+        {{{:_, :_, :_}, :_, :_, :_, {:available, :_}}, [], [true]}
+      ])
 
     scheduled =
-      length(:ets.match_object(@ets_table, {{:_, :_, :_}, :_, :_, :_, {:scheduled, :_}}))
+      :ets.select_count(@ets_table, [
+        {{{:_, :_, :_}, :_, :_, :_, {:scheduled, :_}}, [], [true]}
+      ])
 
     %{total: total, available: available, scheduled: scheduled}
   end

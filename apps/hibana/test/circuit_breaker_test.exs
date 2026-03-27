@@ -82,11 +82,33 @@ defmodule Hibana.CircuitBreakerTest do
 
     assert CircuitBreaker.status(name).state == :open
 
-    # Wait for timeout to trigger half_open via :attempt_reset message
-    Process.sleep(150)
+    # Wait for :attempt_reset message (timeout is 100ms in setup)
+    assert_receive_half_open(name, 500)
+  end
 
-    status = CircuitBreaker.status(name)
-    assert status.state == :half_open
+  defp assert_receive_half_open(name, timeout) do
+    deadline = System.monotonic_time(:millisecond) + timeout
+
+    Stream.repeatedly(fn ->
+      status = CircuitBreaker.status(name)
+      if status.state == :half_open, do: :ok, else: Process.sleep(10)
+      status.state
+    end)
+    |> Enum.reduce_while(nil, fn state, _acc ->
+      if state == :half_open do
+        {:halt, :ok}
+      else
+        if System.monotonic_time(:millisecond) > deadline do
+          {:halt, :timeout}
+        else
+          {:cont, nil}
+        end
+      end
+    end)
+    |> case do
+      :ok -> assert CircuitBreaker.status(name).state == :half_open
+      :timeout -> flunk("Circuit breaker did not transition to half_open within #{timeout}ms")
+    end
   end
 
   test "call returns error tuple on exception", %{name: name} do

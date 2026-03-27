@@ -273,10 +273,18 @@ defmodule Hibana.OTPCache do
 
   def handle_call({:put, key, value, expiry}, _from, %{cache: cache, max_size: max_size} = state) do
     new_cache =
-      if map_size(cache) >= max_size do
-        # Evict oldest
-        {_, new_cache} = Map.pop(cache, hd(Map.keys(cache)))
-        Map.put(new_cache, key, {value, expiry})
+      if map_size(cache) >= max_size and not Map.has_key?(cache, key) do
+        # Evict entry with earliest expiry, or first inserted if all are nil-expiry
+        evict_key =
+          cache
+          |> Enum.min_by(fn
+            {_k, {_v, nil}} -> :infinity
+            {_k, {_v, exp}} -> exp
+          end)
+          |> elem(0)
+
+        {_, trimmed} = Map.pop(cache, evict_key)
+        Map.put(trimmed, key, {value, expiry})
       else
         Map.put(cache, key, {value, expiry})
       end

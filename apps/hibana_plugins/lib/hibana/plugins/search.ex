@@ -279,9 +279,12 @@ defmodule Hibana.Plugins.Search do
         |> halt()
 
       {:error, error} ->
+        require Logger
+        Logger.error("[Search] Search failed: #{inspect(error)}")
+
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(502, Jason.encode!(%{error: "Search failed", details: inspect(error)}))
+        |> send_resp(502, Jason.encode!(%{error: "Search service unavailable"}))
         |> halt()
     end
   end

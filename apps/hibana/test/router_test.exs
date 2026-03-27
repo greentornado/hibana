@@ -123,7 +123,7 @@ defmodule Hibana.RouterTest do
   defp do_match([h | t1], [h | t2], params), do: do_match(t1, t2, params)
 
   defp do_match([h | _], [":" <> param | _], params) when is_binary(h),
-    do: {:ok, Map.put(params, String.to_atom(param), h)}
+    do: {:ok, Map.put(params, String.to_existing_atom(param), h)}
 
   defp do_match(_, _, _), do: :nomatch
 end

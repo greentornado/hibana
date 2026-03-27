@@ -61,8 +61,8 @@ defmodule Hibana.JobTest do
       result = TestJobEnqueue.enqueue(%{test: "data"})
       assert result == :ok
 
-      # Give the spawned process time to execute
-      Process.sleep(50)
+      # Job runs asynchronously in a spawned process
+      Process.sleep(100)
     end
   end
 

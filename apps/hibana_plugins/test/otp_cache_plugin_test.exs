@@ -66,7 +66,7 @@ defmodule Hibana.Plugins.OTPCacheTest do
 
     test "returns nil for expired key", %{name: name} do
       Hibana.Plugins.OTPCache.put(name, :expired, "value", ttl: 10)
-      Process.sleep(20)
+      Process.sleep(50)
       assert Hibana.Plugins.OTPCache.get(name, :expired) == nil
     end
   end
@@ -113,7 +113,7 @@ defmodule Hibana.Plugins.OTPCacheTest do
 
     test "returns false for expired key", %{name: name} do
       Hibana.Plugins.OTPCache.put(name, :expired, "value", ttl: 10)
-      Process.sleep(20)
+      Process.sleep(50)
       assert Hibana.Plugins.OTPCache.exists?(name, :expired) == false
     end
   end

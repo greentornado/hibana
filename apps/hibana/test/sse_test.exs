@@ -28,48 +28,48 @@ defmodule Hibana.SSETest do
     conn = conn(:get, "/events") |> SSE.init()
     result = SSE.send_event(conn, "message", %{text: "hello"})
     assert is_tuple(result)
-    assert elem(result, 0) in [:ok, :error]
+    assert match?({:ok, _}, result) or match?({:error, _}, result)
   end
 
   test "send_event with string data" do
     conn = conn(:get, "/events") |> SSE.init()
     result = SSE.send_event(conn, "update", "simple data")
     assert is_tuple(result)
-    assert elem(result, 0) in [:ok, :error]
+    assert match?({:ok, _}, result) or match?({:error, _}, result)
   end
 
   test "send_event with id option" do
     conn = conn(:get, "/events") |> SSE.init()
     result = SSE.send_event(conn, "message", "data", id: 42)
     assert is_tuple(result)
-    assert elem(result, 0) in [:ok, :error]
+    assert match?({:ok, _}, result) or match?({:error, _}, result)
   end
 
   test "send_comment returns ok or error tuple" do
     conn = conn(:get, "/events") |> SSE.init()
     result = SSE.send_comment(conn, "keep-alive")
     assert is_tuple(result)
-    assert elem(result, 0) in [:ok, :error]
+    assert match?({:ok, _}, result) or match?({:error, _}, result)
   end
 
   test "send_comment with empty comment" do
     conn = conn(:get, "/events") |> SSE.init()
     result = SSE.send_comment(conn)
     assert is_tuple(result)
-    assert elem(result, 0) in [:ok, :error]
+    assert match?({:ok, _}, result) or match?({:error, _}, result)
   end
 
   test "send_data sends data-only event" do
     conn = conn(:get, "/events") |> SSE.init()
     result = SSE.send_data(conn, "hello")
     assert is_tuple(result)
-    assert elem(result, 0) in [:ok, :error]
+    assert match?({:ok, _}, result) or match?({:error, _}, result)
   end
 
   test "send_data encodes maps as JSON" do
     conn = conn(:get, "/events") |> SSE.init()
     result = SSE.send_data(conn, %{key: "value"})
     assert is_tuple(result)
-    assert elem(result, 0) in [:ok, :error]
+    assert match?({:ok, _}, result) or match?({:error, _}, result)
   end
 end

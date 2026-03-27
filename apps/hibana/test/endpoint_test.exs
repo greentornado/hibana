@@ -37,7 +37,7 @@ defmodule Hibana.EndpointTest do
     test "accepts custom http options" do
       opts = [http: [port: 0]]
       result = Hibana.Endpoint.start_link(opts)
-      assert match?({:ok, _}, result) or result == :ignore or match?({:error, _}, result)
+      assert match?({:ok, _}, result) or result == :ignore
     end
   end
 
