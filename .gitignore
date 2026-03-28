@@ -1,9 +1,11 @@
 # Build artifacts
 **/_build/
+**/*/_build/
 **/deps/
 *.ez
 *.beam
-
+_build/
+**/*/_build/
 # Generated files
 **/doc/
 /cover/
