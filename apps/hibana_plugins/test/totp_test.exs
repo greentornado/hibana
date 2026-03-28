@@ -65,7 +65,7 @@ defmodule Hibana.Plugins.TOTPTest do
     test "includes algorithm and digits params" do
       secret = TOTP.generate_secret()
       uri = TOTP.provisioning_uri(secret, "test@test.com")
-      assert String.contains?(uri, "algorithm=SHA1")
+      assert String.contains?(uri, "algorithm=SHA256")
       assert String.contains?(uri, "digits=6")
       assert String.contains?(uri, "period=30")
     end

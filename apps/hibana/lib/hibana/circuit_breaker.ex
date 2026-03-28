@@ -68,8 +68,10 @@ defmodule Hibana.CircuitBreaker do
   end
 
   def init(opts) do
+    name = Keyword.fetch!(opts, :name)
+
     state = %__MODULE__{
-      name: Keyword.fetch!(opts, :name),
+      name: name,
       state: :closed,
       failure_count: 0,
       success_count: 0,
@@ -78,6 +80,10 @@ defmodule Hibana.CircuitBreaker do
       reset_timeout: Keyword.get(opts, :reset_timeout, 60_000),
       last_failure: nil
     }
+
+    # Store state in ETS for fast concurrent reads
+    :ets.new(name, [:named_table, :public, read_concurrency: true])
+    :ets.insert(name, {state.state, state.failure_count, state.last_failure})
 
     {:ok, state}
   end
@@ -88,6 +94,8 @@ defmodule Hibana.CircuitBreaker do
   If the circuit is closed, the function runs normally. If open, returns
   `{:error, :circuit_open}` immediately without calling the function.
   In half-open state, allows the call through as a test.
+
+  Uses ETS for fast state reads to avoid GenServer bottleneck.
 
   ## Parameters
 
@@ -104,42 +112,71 @@ defmodule Hibana.CircuitBreaker do
 
       ```elixir
       case Hibana.CircuitBreaker.call(:payment_api, fn -> HTTPClient.post(url, body) end) do
-        {:ok, response} -> handle_response(response)
+        {:ok, response} -> handle_response()
         {:error, :circuit_open} -> fallback_response()
         {:error, reason} -> handle_error(reason)
       end
       ```
   """
   def call(name, fun) do
-    case GenServer.call(name, :check_state) do
-      {:ok, :closed} ->
+    # Fast path: read state from ETS instead of GenServer call
+    circuit_state =
+      case :ets.lookup(name, :state) do
+        [{:state, state, _, _}] -> state
+        # Default to closed if not found
+        [] -> :closed
+      end
+
+    case circuit_state do
+      :closed ->
         execute_and_report(name, fun)
 
-      {:ok, :half_open} ->
+      :half_open ->
         execute_and_report(name, fun)
 
-      {:error, :circuit_open} ->
-        {:error, :circuit_open}
+      :open ->
+        # Check if we should transition to half_open
+        case should_try_half_open?(name) do
+          true ->
+            GenServer.cast(name, :try_half_open)
+            execute_and_report(name, fun)
+
+          false ->
+            {:error, :circuit_open}
+        end
     end
   end
 
   defp execute_and_report(name, fun) do
     try do
       result = fun.()
-      GenServer.call(name, {:report_result, :success})
+      # Use cast for non-blocking success report
+      GenServer.cast(name, {:report_result, :success})
       {:ok, result}
     rescue
       e ->
-        GenServer.call(name, {:report_result, :failure})
+        GenServer.cast(name, {:report_result, :failure})
         {:error, e}
     catch
       :exit, reason ->
-        GenServer.call(name, {:report_result, :failure})
+        GenServer.cast(name, {:report_result, :failure})
         {:error, reason}
 
       :throw, value ->
-        GenServer.call(name, {:report_result, :failure})
+        GenServer.cast(name, {:report_result, :failure})
         {:error, {:throw, value}}
+    end
+  end
+
+  defp should_try_half_open?(name) do
+    case :ets.lookup(name, :state) do
+      [{:state, :open, _, last_failure}] when is_integer(last_failure) ->
+        now = System.monotonic_time(:millisecond)
+        timeout = :ets.lookup_element(name, :config, 2)
+        now - last_failure > timeout
+
+      _ ->
+        false
     end
   end
 
@@ -205,11 +242,36 @@ defmodule Hibana.CircuitBreaker do
   end
 
   def handle_call({:report_result, :success}, _from, state) do
-    {:reply, :ok, handle_success_result(state)}
+    new_state = handle_success_result(state)
+    {:reply, :ok, new_state}
   end
 
   def handle_call({:report_result, :failure}, _from, state) do
-    {:reply, :ok, handle_failure_result(state)}
+    new_state = handle_failure_result(state)
+    {:reply, :ok, new_state}
+  end
+
+  # Cast versions for better performance (non-blocking)
+  def handle_cast({:report_result, :success}, state) do
+    new_state = handle_success_result(state)
+    {:noreply, new_state}
+  end
+
+  def handle_cast({:report_result, :failure}, state) do
+    new_state = handle_failure_result(state)
+    {:noreply, new_state}
+  end
+
+  def handle_cast(:try_half_open, state) do
+    # Transition to half_open state
+    new_state = %{state | state: :half_open, success_count: 0}
+    # Update ETS
+    :ets.insert(
+      state.name,
+      {:state, new_state.state, new_state.failure_count, new_state.last_failure}
+    )
+
+    {:noreply, new_state}
   end
 
   def handle_call(:status, _from, state) do
@@ -235,31 +297,49 @@ defmodule Hibana.CircuitBreaker do
   end
 
   defp handle_success_result(state) do
-    case state.state do
-      :half_open ->
-        new_count = state.success_count + 1
+    new_state =
+      case state.state do
+        :half_open ->
+          new_count = state.success_count + 1
 
-        if new_count >= 3 do
-          %{state | state: :closed, failure_count: 0, success_count: 0}
-        else
-          %{state | success_count: new_count}
-        end
+          if new_count >= 3 do
+            %{state | state: :closed, failure_count: 0, success_count: 0}
+          else
+            %{state | success_count: new_count}
+          end
 
-      _ ->
-        %{state | success_count: state.success_count + 1}
-    end
+        _ ->
+          %{state | success_count: state.success_count + 1}
+      end
+
+    # Update ETS
+    :ets.insert(
+      state.name,
+      {:state, new_state.state, new_state.failure_count, new_state.last_failure}
+    )
+
+    new_state
   end
 
   defp handle_failure_result(state) do
     new_count = state.failure_count + 1
     now = System.monotonic_time(:millisecond)
 
-    if new_count >= state.threshold do
-      Process.send_after(self(), :attempt_reset, state.timeout)
-      %{state | state: :open, failure_count: new_count, success_count: 0, last_failure: now}
-    else
-      %{state | failure_count: new_count, last_failure: now}
-    end
+    new_state =
+      if new_count >= state.threshold do
+        Process.send_after(self(), :attempt_reset, state.timeout)
+        %{state | state: :open, failure_count: new_count, success_count: 0, last_failure: now}
+      else
+        %{state | failure_count: new_count, last_failure: now}
+      end
+
+    # Update ETS
+    :ets.insert(
+      state.name,
+      {:state, new_state.state, new_state.failure_count, new_state.last_failure}
+    )
+
+    new_state
   end
 
   defp time_elapsed?(nil, _timeout), do: true

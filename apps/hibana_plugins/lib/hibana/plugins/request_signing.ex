@@ -24,7 +24,7 @@ defmodule Hibana.Plugins.RequestSigning do
   - `:algorithm` - Hash algorithm for HMAC computation (default: `:sha256`)
   """
 
-  @behaviour Plug
+  use Hibana.Plugin
 
   @default_max_age 300
   @signature_header "x-signature"

@@ -117,7 +117,7 @@ defmodule Hibana.LiveView do
     end
 
     defp generate_id do
-      :crypto.strong_rand_bytes(8) |> Base.encode64()
+      :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
     end
   end
 

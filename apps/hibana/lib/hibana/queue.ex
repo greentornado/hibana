@@ -57,10 +57,12 @@ defmodule Hibana.Queue do
   end
 
   def init(_opts) do
+    # Use :protected instead of :public for safety
+    # Writes will be routed through GenServer to prevent race conditions
     :ets.new(@ets_table, [
       :ordered_set,
       :named_table,
-      :public,
+      :protected,
       read_concurrency: true,
       write_concurrency: true
     ])
@@ -81,9 +83,7 @@ defmodule Hibana.Queue do
     # First, promote scheduled jobs that are ready
     scheduled =
       :ets.select(@ets_table, [
-        {{{:_, :_, :_}, :_, :_, :_, {:scheduled, :"$1"}},
-         [{:"=<", :"$1", now}],
-         [:"$_"]}
+        {{{:_, :_, :_}, :_, :_, :_, {:scheduled, :"$1"}}, [{:"=<", :"$1", now}], [:"$_"]}
       ])
 
     Enum.each(scheduled, fn {key, inserted, retry, max, {:scheduled, at}} ->
@@ -93,17 +93,18 @@ defmodule Hibana.Queue do
     # Then process all available jobs that are ready
     available =
       :ets.select(@ets_table, [
-        {{{:_, :_, :_}, :_, :_, :_, {:available, :"$1"}},
-         [{:"=<", :"$1", now}],
-         [:"$_"]}
+        {{{:_, :_, :_}, :_, :_, :_, {:available, :"$1"}}, [{:"=<", :"$1", now}], [:"$_"]}
       ])
 
     Enum.each(available, fn job -> execute_job(job) end)
   end
 
   defp execute_job({{mod, args, id}, _inserted_at, retry, max_retries, _status}) do
-    ets_table = @ets_table
+    # Spawn supervised task via GenServer call to ensure proper cleanup
+    GenServer.cast(__MODULE__, {:execute_job, mod, args, id, retry, max_retries})
+  end
 
+  def handle_cast({:execute_job, mod, args, id, retry, max_retries}, state) do
     Task.start(fn ->
       result =
         try do
@@ -115,27 +116,39 @@ defmodule Hibana.Queue do
           kind, reason -> {:error, {kind, reason}}
         end
 
-      case result do
-        :ok ->
-          :ets.delete(ets_table, {mod, args, id})
-          Logger.info("Job completed: \#{inspect(mod)}")
-
-        {:error, _} when retry < max_retries ->
-          new_retry = retry + 1
-          new_ready_at = System.system_time(:millisecond) + 1000 * round(:math.pow(2, new_retry))
-
-          :ets.update_element(ets_table, {mod, args, id}, [
-            {5, {:available, new_ready_at}},
-            {3, new_retry}
-          ])
-
-          Logger.warning("Job failed, retry \#{new_retry}: \#{inspect(mod)}")
-
-        {:error, _} ->
-          :ets.delete(ets_table, {mod, args, id})
-          Logger.warning("Job failed permanently: \#{inspect(mod)}")
-      end
+      # Send result back to GenServer for stateful operations
+      GenServer.call(__MODULE__, {:job_complete, {mod, args, id}, result, retry, max_retries})
     end)
+
+    {:noreply, state}
+  end
+
+  def handle_call({:job_complete, job_key, result, retry, max_retries}, _from, state) do
+    ets_table = @ets_table
+
+    case result do
+      :ok ->
+        :ets.delete(ets_table, job_key)
+        Logger.info("Job completed: \#{inspect(elem(job_key, 0))}")
+        {:reply, :ok, state}
+
+      {:error, _} when retry < max_retries ->
+        new_retry = retry + 1
+        new_ready_at = System.system_time(:millisecond) + 1000 * round(:math.pow(2, new_retry))
+
+        :ets.update_element(ets_table, job_key, [
+          {5, {:available, new_ready_at}},
+          {3, new_retry}
+        ])
+
+        Logger.warning("Job failed, retry \#{new_retry}: \#{inspect(elem(job_key, 0))}")
+        {:reply, :ok, state}
+
+      {:error, _} ->
+        :ets.delete(ets_table, job_key)
+        Logger.warning("Job failed permanently: \#{inspect(elem(job_key, 0))}")
+        {:reply, :ok, state}
+    end
   end
 
   @doc """
@@ -266,5 +279,16 @@ defmodule Hibana.Queue do
 
   defp generate_id do
     :crypto.strong_rand_bytes(8) |> Base.encode64()
+  end
+
+  @doc "Return a child specification for use in a supervision tree."
+  def child_spec(opts) do
+    %{
+      id: Keyword.get(opts, :name, __MODULE__),
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 5_000
+    }
   end
 end

@@ -69,7 +69,8 @@ defmodule Hibana.Plugins.HealthCheck do
   def init(opts) do
     %{
       checks: Keyword.get(opts, :checks, []),
-      path: Keyword.get(opts, :path, "/health")
+      path: Keyword.get(opts, :path, "/health"),
+      custom_checks: %{}
     }
   end
 
@@ -123,14 +124,17 @@ defmodule Hibana.Plugins.HealthCheck do
   defp check_memory do
     mem = :erlang.memory()
     total = Keyword.get(mem, :total, 0)
-    max_memory = 2 * 1024 * 1024 * 1024
+
+    max_memory =
+      Application.get_env(:hibana_plugins, :health_check_memory_threshold, 2 * 1024 * 1024 * 1024)
 
     if total < max_memory, do: :ok, else: :warn
   end
 
   defp check_processes do
     count = length(Process.list())
-    if count < 100_000, do: :ok, else: :warn
+    max_processes = Application.get_env(:hibana_plugins, :health_check_process_threshold, 100_000)
+    if count < max_processes, do: :ok, else: :warn
   end
 
   defp check_uptime do

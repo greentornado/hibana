@@ -128,13 +128,34 @@ defmodule Hibana.Plugins.Cache do
   end
 
   @doc """
-  Set a value in cache with TTL.
+  Set a value in cache with TTL. Enforces max_size limit with LRU eviction.
   """
-  def set(key, value, ttl \\ 300_000) do
+  def set(key, value, ttl \\ 300_000, max_size \\ 1000) do
     expiry = System.system_time(:millisecond) + ttl
+
+    # Check current size and evict if necessary
+    current_size = :ets.info(@table, :size)
+
+    if current_size >= max_size do
+      # Evict 10% of entries
+      evict_oldest(div(max_size, 10))
+    end
+
     :ets.insert(@table, {key, value, expiry})
     :ok
   end
+
+  defp evict_oldest(count) when count > 0 do
+    # Get all entries sorted by expiry (LRU approximation)
+    entries =
+      :ets.tab2list(@table)
+      |> Enum.sort_by(fn {_, _, expiry} -> expiry end)
+      |> Enum.take(count)
+
+    Enum.each(entries, fn {key, _, _} -> :ets.delete(@table, key) end)
+  end
+
+  defp evict_oldest(_), do: :ok
 
   @doc """
   Delete a key from cache.

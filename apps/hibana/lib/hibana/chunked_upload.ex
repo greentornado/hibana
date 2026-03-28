@@ -57,7 +57,14 @@ defmodule Hibana.ChunkedUpload do
 
     # Get filename from content-disposition or generate one
     filename = get_upload_filename(conn) || generate_filename()
-    safe_filename = Path.basename(filename)
+    # Sanitize filename: remove path components, null bytes, and special chars
+    safe_filename =
+      filename
+      |> Path.basename()
+      |> String.replace(~r/[\x00-\x1f\x7f\/\\<>:\"|?*]/, "_")
+      # Limit length
+      |> String.slice(0, 255)
+
     dest_path = Path.join(upload_dir, "#{generate_id()}-#{safe_filename}")
 
     case stream_body_to_file(conn, dest_path, max_size) do

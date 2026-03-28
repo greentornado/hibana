@@ -80,12 +80,50 @@ defmodule Hibana.Cluster do
     hosts = Keyword.get(opts, :hosts, [])
     interval = Keyword.get(opts, :heartbeat_interval, 5_000)
 
-    state = %{
-      strategy: strategy,
-      hosts: hosts,
-      interval: interval,
-      connected: MapSet.new()
-    }
+    # Validate and warn about unimplemented strategies
+    state =
+      case strategy do
+        :epmd ->
+          %{
+            strategy: strategy,
+            hosts: hosts,
+            interval: interval,
+            connected: MapSet.new()
+          }
+
+        :dns ->
+          require Logger
+
+          Logger.warning(
+            "[Cluster] :dns strategy is not fully implemented. Falling back to :epmd behavior."
+          )
+
+          %{
+            # Fall back to epmd
+            strategy: :epmd,
+            hosts: hosts,
+            interval: interval,
+            connected: MapSet.new()
+          }
+
+        :gossip ->
+          require Logger
+
+          Logger.warning(
+            "[Cluster] :gossip strategy is not fully implemented. Falling back to :epmd behavior."
+          )
+
+          %{
+            # Fall back to epmd
+            strategy: :epmd,
+            hosts: hosts,
+            interval: interval,
+            connected: MapSet.new()
+          }
+
+        other ->
+          raise ArgumentError, "Unknown cluster strategy: #{inspect(other)}. Supported: :epmd"
+      end
 
     # Connect to known hosts
     if strategy == :epmd and hosts != [] do

@@ -36,14 +36,35 @@ defmodule Hibana.FileStreamer do
   @doc """
   Send a file using zero-copy sendfile(2).
   Supports range requests for resumable downloads and media seeking.
+
+  ## Security
+
+  Paths are validated against path traversal attacks. The file must be within
+  the allowed base directory (default: "priv/static").
   """
   def send_file(conn, path, opts \\ []) do
-    case File.stat(path) do
+    base_dir = Keyword.get(opts, :base_dir, "priv/static")
+
+    # Resolve and validate path to prevent path traversal
+    resolved_path = Path.expand(path, base_dir)
+    base_dir_expanded = Path.expand(base_dir)
+
+    if String.starts_with?(resolved_path, base_dir_expanded) do
+      do_send_file(conn, resolved_path, opts)
+    else
+      conn
+      |> put_resp_content_type("text/plain")
+      |> send_resp(403, "Forbidden: Invalid file path")
+    end
+  end
+
+  defp do_send_file(conn, resolved_path, opts) do
+    case File.stat(resolved_path) do
       {:ok, %File.Stat{size: size, mtime: mtime}} ->
-        content_type = Keyword.get(opts, :content_type, MIME.from_path(path))
+        content_type = Keyword.get(opts, :content_type, MIME.from_path(resolved_path))
         filename = Keyword.get(opts, :filename)
         range_support = Keyword.get(opts, :range, false)
-        etag = generate_etag(path, size, mtime)
+        etag = generate_etag(resolved_path, size, mtime)
 
         conn =
           conn
@@ -58,19 +79,29 @@ defmodule Hibana.FileStreamer do
           send_resp(conn, 304, "")
         else
           if range_support do
-            handle_range_request(conn, path, size)
+            handle_range_request(conn, resolved_path, size)
           else
             # Zero-copy sendfile
             conn
             |> put_resp_header("content-length", to_string(size))
-            |> Plug.Conn.send_file(200, path)
+            |> Plug.Conn.send_file(200, resolved_path)
           end
         end
+
+      {:error, :enoent} ->
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(404, "File not found")
+
+      {:error, :eacces} ->
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(403, "Forbidden: Access denied")
 
       {:error, reason} ->
         conn
         |> put_resp_content_type("text/plain")
-        |> send_resp(404, "File not found: #{reason}")
+        |> send_resp(500, "Error accessing file: #{inspect(reason)}")
     end
   end
 

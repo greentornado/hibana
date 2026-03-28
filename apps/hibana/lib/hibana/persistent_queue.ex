@@ -64,7 +64,8 @@ defmodule Hibana.PersistentQueue do
     :poll_interval,
     :paused,
     :in_flight,
-    :workers
+    :workers,
+    :worker_refs
   ]
 
   @doc "Start the persistent queue process with the given options."
@@ -90,8 +91,14 @@ defmodule Hibana.PersistentQueue do
     ets_table = :ets.new(ets_name, [:ordered_set, :public, read_concurrency: true])
     {:ok, dets_table} = :dets.open_file(dets_name, file: dets_path, type: :set)
 
-    # Recover jobs from DETS on restart
-    recover_jobs(dets_table, ets_table, max_memory)
+    # Start async recovery to avoid blocking init
+    # Recovery happens in a spawned process and sends results back
+    parent = self()
+
+    spawn(fn ->
+      recovered_count = recover_jobs(dets_table, ets_table, max_memory)
+      send(parent, {:recovery_complete, recovered_count})
+    end)
 
     state = %__MODULE__{
       name: name,
@@ -104,7 +111,9 @@ defmodule Hibana.PersistentQueue do
       poll_interval: poll_interval,
       paused: false,
       in_flight: 0,
-      workers: MapSet.new()
+      workers: MapSet.new(),
+      # correlation_id -> monitor_ref mapping
+      worker_refs: %{}
     }
 
     schedule_poll(poll_interval)
@@ -216,16 +225,35 @@ defmodule Hibana.PersistentQueue do
     {:noreply, state}
   end
 
-  def handle_info({:job_done, _correlation_id, job_key}, state) do
+  def handle_info({:job_done, correlation_id, job_key}, state) do
+    # Clean up worker tracking
+    {monitor_ref, new_worker_refs} = Map.pop(state.worker_refs, correlation_id)
+
+    new_workers =
+      if monitor_ref, do: MapSet.delete(state.workers, monitor_ref), else: state.workers
+
     :ets.delete(state.ets_table, job_key)
     :dets.delete(state.dets_table, job_key)
-    {:noreply, state}
+
+    {:noreply,
+     %{
+       state
+       | in_flight: max(state.in_flight - 1, 0),
+         workers: new_workers,
+         worker_refs: new_worker_refs
+     }}
   end
 
   def handle_info(
-        {:job_failed, _correlation_id, job_key, module, args, retry, max_retries},
+        {:job_failed, correlation_id, job_key, module, args, retry, max_retries},
         state
       ) do
+    # Clean up worker tracking
+    {monitor_ref, new_worker_refs} = Map.pop(state.worker_refs, correlation_id)
+
+    new_workers =
+      if monitor_ref, do: MapSet.delete(state.workers, monitor_ref), else: state.workers
+
     if retry < max_retries do
       # Requeue with exponential backoff
       backoff = :math.pow(2, retry) |> round() |> Kernel.*(1000)
@@ -241,12 +269,38 @@ defmodule Hibana.PersistentQueue do
       :dets.delete(state.dets_table, job_key)
     end
 
-    {:noreply, state}
+    {:noreply,
+     %{
+       state
+       | in_flight: max(state.in_flight - 1, 0),
+         workers: new_workers,
+         worker_refs: new_worker_refs
+     }}
   end
 
   def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
+    # This is a backup cleanup in case job_done/job_failed messages are lost
+    # Find and remove the correlation_id associated with this monitor_ref
+    correlation_id = Enum.find(state.worker_refs, fn {_, v} -> v == ref end) |> elem(0)
+
+    new_worker_refs =
+      if correlation_id,
+        do: Map.delete(state.worker_refs, correlation_id),
+        else: state.worker_refs
+
     {:noreply,
-     %{state | in_flight: max(state.in_flight - 1, 0), workers: MapSet.delete(state.workers, ref)}}
+     %{
+       state
+       | in_flight: max(state.in_flight - 1, 0),
+         workers: MapSet.delete(state.workers, ref),
+         worker_refs: new_worker_refs
+     }}
+  end
+
+  def handle_info({:recovery_complete, count}, state) do
+    require Logger
+    Logger.info("[PersistentQueue] Recovered #{count} jobs from disk")
+    {:noreply, state}
   end
 
   def terminate(_reason, state) do
@@ -317,7 +371,8 @@ defmodule Hibana.PersistentQueue do
             state = %{
               state
               | in_flight: state.in_flight + 1,
-                workers: MapSet.put(state.workers, monitor_ref)
+                workers: MapSet.put(state.workers, monitor_ref),
+                worker_refs: Map.put(state.worker_refs, correlation_id, monitor_ref)
             }
 
             take_ready_jobs(state, table, now, count - 1)

@@ -59,9 +59,26 @@ defmodule Hibana.Pipeline do
   end
 
   defmacro pipeline(name, do: block) do
+    # Accumulate plugs within the pipeline block
     quote do
-      @pipelines {unquote(name), []}
+      Module.register_attribute(__MODULE__, :current_pipeline_plugs, accumulate: true)
+      @current_pipeline_name unquote(name)
       unquote(block)
+      @pipelines {unquote(name), @current_pipeline_plugs}
+      Module.delete_attribute(__MODULE__, :current_pipeline_name)
+      Module.deleteAttribute(__MODULE__, :current_pipeline_plugs)
+    end
+  end
+
+  defmacro plug(plug_module, opts \\ []) do
+    quote do
+      if Module.get_attribute(__MODULE__, :current_pipeline_name) do
+        # Inside a pipeline block - accumulate
+        @current_pipeline_plugs {unquote(plug_module), unquote(opts)}
+      else
+        # Standalone plug at module level - use CompiledRouter's plug
+        @plugs {unquote(plug_module), unquote(opts)}
+      end
     end
   end
 

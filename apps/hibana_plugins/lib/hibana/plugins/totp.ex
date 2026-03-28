@@ -16,7 +16,7 @@ defmodule Hibana.Plugins.TOTP do
 
   @default_digits 6
   @default_period 30
-  @default_algorithm :sha
+  @default_algorithm :sha256
   @default_secret_length 20
 
   @doc """

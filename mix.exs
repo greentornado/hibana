@@ -9,7 +9,19 @@ defmodule Hibana.MixProject do
       deps: deps(),
       test_coverage: [tool: ExCoveralls, threshold: 65],
       preferred_envs: [test: :test],
-      aliases: aliases()
+      aliases: aliases(),
+      releases: [
+        hibana: [
+          version: "0.1.0",
+          applications: [
+            hibana: :permanent,
+            hibana_plugins: :permanent,
+            hibana_generator: :temporary,
+            hibana_ecto: :permanent
+          ],
+          include_executables_for: [:unix]
+        ]
+      ]
     ]
   end
 

@@ -95,12 +95,26 @@ defmodule Hibana.Plugins.DistributedRateLimiter do
   end
 
   defp get_remote_counts(key, window) do
-    Node.list()
-    |> Enum.map(fn node ->
+    # Use parallel async tasks with timeout for non-blocking RPC
+    tasks =
+      Node.list()
+      |> Enum.map(fn node ->
+        Task.async(fn ->
+          try do
+            :rpc.call(node, __MODULE__, :local_count_for, [key, window], 500)
+          catch
+            _, _ -> 0
+          end
+        end)
+      end)
+
+    # Collect results with 1s timeout
+    tasks
+    |> Enum.map(fn task ->
       try do
-        :rpc.call(node, __MODULE__, :local_count_for, [key, window], 1_000)
+        Task.await(task, 1_000)
       catch
-        _, _ -> 0
+        _ -> 0
       end
     end)
     |> Enum.sum()

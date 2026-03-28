@@ -38,6 +38,7 @@ defmodule Mix.Tasks.Server do
       )
 
     unless opts[:no_compile] do
+      Mix.Task.run("app.start", [])
       Mix.Task.run("compile", [])
     end
 

@@ -48,6 +48,15 @@ defmodule Hibana.Plugins.CORS do
   @impl true
   def init(opts) do
     origins = Keyword.get(opts, :origins, ["*"])
+    credentials = Keyword.get(opts, :credentials, false)
+
+    # Security validation: reject wildcard origins with credentials
+    if credentials and Enum.any?(origins, &(&1 == "*")) do
+      raise ArgumentError,
+            "CORS: Cannot use wildcard origins (\"*\") with credentials: true. " <>
+              "This combination is rejected by browsers and creates a security vulnerability. " <>
+              "Specify explicit origins or disable credentials."
+    end
 
     # Pre-compile regex patterns
     compiled_origins =
@@ -60,7 +69,7 @@ defmodule Hibana.Plugins.CORS do
       origins: compiled_origins,
       methods: Keyword.get(opts, :methods, ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]),
       headers: Keyword.get(opts, :headers, ["Content-Type", "Authorization"]),
-      credentials: Keyword.get(opts, :credentials, false),
+      credentials: credentials,
       max_age: Keyword.get(opts, :max_age, 86400)
     }
   end

@@ -230,6 +230,19 @@ defmodule Hibana.SSE do
 
   Expects messages in the format `{:sse_event, type, data}`.
   Stops when receiving `:sse_close` or when the connection is closed.
+
+  ## Blocking Behavior Warning
+
+  This function blocks the calling process indefinitely (or until timeout).
+  It should be used inside a spawned process or Task to avoid blocking
+  the request handler. The connection process will be tied to this loop.
+
+  ## Example
+
+      # Spawn in a separate process to avoid blocking
+      Task.start(fn ->
+        Hibana.SSE.stream_loop(conn, keep_alive: 30_000)
+      end)
   """
   def stream_loop(conn, opts \\ []) do
     keep_alive = Keyword.get(opts, :keep_alive, 15_000)

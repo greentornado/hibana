@@ -132,6 +132,7 @@ defmodule Hibana.Core.MixProject do
       {:plug, "~> 1.16"},
       {:cowboy, "~> 2.14"},
       {:plug_cowboy, "~> 2.7"},
+      {:ranch, "~> 2.2"},
       {:mime, "~> 2.0"},
       {:jason, "~> 1.4"},
       {:telemetry, "~> 1.3"},

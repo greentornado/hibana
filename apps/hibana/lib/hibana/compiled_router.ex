@@ -227,26 +227,78 @@ defmodule Hibana.CompiledRouter do
 
   @doc false
   def build_match_pattern(path_parts) do
-    {patterns, params} =
-      Enum.map_reduce(path_parts, [], fn
-        ":" <> param, acc ->
-          var = Macro.var(String.to_atom("path_param_#{param}"), nil)
-          {var, [{param, var} | acc]}
+    build_match_pattern(path_parts, [], [])
+  end
 
-        "*" <> param, acc ->
-          var = Macro.var(String.to_atom("path_rest_#{param}"), nil)
-          {var, [{param, var} | acc]}
-
-        segment, acc ->
-          {segment, acc}
-      end)
+  defp build_match_pattern([], patterns_acc, params_acc) do
+    patterns_acc = Enum.reverse(patterns_acc)
 
     params_map =
-      Enum.reduce(params, {:%{}, [], []}, fn {key, var}, {:%{}, meta, pairs} ->
+      Enum.reduce(params_acc, {:%{}, [], []}, fn {key, var}, {:%{}, meta, pairs} ->
         {:%{}, meta, [{key, var} | pairs]}
       end)
 
-    {patterns, params_map}
+    {patterns_acc, params_map}
+  end
+
+  # Handle wildcard at the end of path - captures all remaining segments as a list
+  defp build_match_pattern(["*" <> param], patterns_acc, params_acc) do
+    var = Macro.var(String.to_atom("path_rest_#{param}"), nil)
+
+    # Create ["prefix1", "prefix2" | rest] pattern if there are previous segments
+    # or just `rest` if this is the only segment
+    final_pattern =
+      case patterns_acc do
+        # Just the wildcard: match any path
+        [] ->
+          var
+
+        acc ->
+          # Reverse and build [seg1, seg2 | rest] pattern
+          base = Enum.reverse(acc)
+          build_cons_pattern(base, var)
+      end
+
+    new_params = [
+      {param,
+       quote do
+         Path.join(unquote(var))
+       end}
+      | params_acc
+    ]
+
+    build_match_pattern([], [final_pattern], new_params)
+  end
+
+  # Handle regular wildcard (not at end - treat as single segment)
+  defp build_match_pattern(["*" <> param | rest], patterns_acc, params_acc) do
+    var = Macro.var(String.to_atom("path_param_#{param}"), nil)
+    build_match_pattern(rest, [var | patterns_acc], [{param, var} | params_acc])
+  end
+
+  # Handle named parameter
+  defp build_match_pattern([":" <> param | rest], patterns_acc, params_acc) do
+    var = Macro.var(String.to_atom("path_param_#{param}"), nil)
+    build_match_pattern(rest, [var | patterns_acc], [{param, var} | params_acc])
+  end
+
+  # Handle static segment
+  defp build_match_pattern([segment | rest], patterns_acc, params_acc) do
+    build_match_pattern(rest, [segment | patterns_acc], params_acc)
+  end
+
+  defp build_cons_pattern([last], rest_var) do
+    quote do
+      [unquote(last) | unquote(rest_var)]
+    end
+  end
+
+  defp build_cons_pattern([head | tail], rest_var) do
+    inner = build_cons_pattern(tail, rest_var)
+
+    quote do
+      [unquote(head) | unquote(inner)]
+    end
   end
 
   @doc false

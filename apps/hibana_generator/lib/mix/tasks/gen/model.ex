@@ -72,7 +72,8 @@ defmodule Mix.Tasks.Gen.Model do
 
     model_content = """
     defmodule #{app_module}.#{module_name} do
-      use Hibana.Ecto.Model
+      use Ecto.Schema
+      import Ecto.Changeset
 
       schema "#{model_file}s" do
         #{generate_schema_fields(fields)}
@@ -81,7 +82,7 @@ defmodule Mix.Tasks.Gen.Model do
 
       def changeset(struct, attrs) do
         struct
-        |> cast(attrs, #{fields |> Enum.map(fn {f, _} -> ~c"#{f}" end) |> Enum.join(", ")})
+        |> cast(attrs, [#{fields |> Enum.map(fn {f, _} -> ~c"#{f}" end) |> Enum.join(", ")}])
         #{generate_validations(fields)}
       end
     end
@@ -111,7 +112,10 @@ defmodule Mix.Tasks.Gen.Model do
 
   defp safe_type(type) do
     atom = String.to_atom(type)
-    if atom in @valid_types, do: atom, else: raise("Unknown field type: #{type}. Valid types: #{inspect(@valid_types)}")
+
+    if atom in @valid_types,
+      do: atom,
+      else: raise("Unknown field type: #{type}. Valid types: #{inspect(@valid_types)}")
   end
 
   @valid_options ~w(null default size precision scale primary_key unique index)a
@@ -127,7 +131,10 @@ defmodule Mix.Tasks.Gen.Model do
 
   defp safe_option(key) do
     atom = String.to_atom(key)
-    if atom in @valid_options, do: atom, else: raise("Unknown option: #{key}. Valid options: #{inspect(@valid_options)}")
+
+    if atom in @valid_options,
+      do: atom,
+      else: raise("Unknown option: #{key}. Valid options: #{inspect(@valid_options)}")
   end
 
   defp parse_value("true"), do: true

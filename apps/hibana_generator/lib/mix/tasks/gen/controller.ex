@@ -88,7 +88,8 @@ defmodule Mix.Tasks.Gen.Controller do
 
   defp generate_action("show") do
     """
-    def show(conn, %{id: id}) do
+    def show(conn, _params) do
+      id = conn.params["id"]
       json(conn, %{data: %{id: id}})
     end
     """
@@ -104,8 +105,37 @@ defmodule Mix.Tasks.Gen.Controller do
 
   defp generate_action("create") do
     """
-    def create(conn, %{body: body}) do
+    def create(conn, _params) do
+      body = conn.body_params
       json(conn, %{data: body, message: "Created"})
+    end
+    """
+  end
+
+  defp generate_action("edit") do
+    """
+    def edit(conn, _params) do
+      id = conn.params["id"]
+      json(conn, %{data: %{id: id}})
+    end
+    """
+  end
+
+  defp generate_action("update") do
+    """
+    def update(conn, _params) do
+      id = conn.params["id"]
+      body = conn.body_params
+      json(conn, %{data: %{id: id, body: body}, message: "Updated"})
+    end
+    """
+  end
+
+  defp generate_action("delete") do
+    """
+    def delete(conn, _params) do
+      id = conn.params["id"]
+      json(conn, %{message: "Deleted \#{id}"})
     end
     """
   end

@@ -363,4 +363,15 @@ defmodule Hibana.OTPCache do
   defp schedule_cleanup do
     Process.send_after(self(), :cleanup, 60_000)
   end
+
+  @doc "Return a child specification for use in a supervision tree."
+  def child_spec(opts) do
+    %{
+      id: Keyword.get(opts, :name, __MODULE__),
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 5_000
+    }
+  end
 end

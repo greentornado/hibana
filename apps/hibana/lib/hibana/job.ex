@@ -23,16 +23,30 @@ defmodule Hibana.Job do
 
     def start_link(opts) do
       name = Keyword.get(opts, :name, __MODULE__)
-      GenServer.start_link(__MODULE__, [], name: name)
+      GenServer.start_link(__MODULE__, opts, name: name)
     end
 
-    def init(_opts) do
+    def init(opts) do
+      # Start a Task.Supervisor for supervised job execution
+      task_sup_opts = [name: :job_task_supervisor, restart: :temporary]
+      {:ok, _pid} = Task.Supervisor.start_link(task_sup_opts)
       {:ok, %{}}
     end
 
     def handle_call({:enqueue, worker_module, args}, _from, state) do
-      spawn(fn ->
-        apply(worker_module, :perform, [args])
+      # Use supervised Task instead of bare spawn
+      Task.Supervisor.start_child(:job_task_supervisor, fn ->
+        try do
+          apply(worker_module, :perform, [args])
+        rescue
+          e ->
+            require Logger
+            Logger.error("Job failed: \#{inspect(e)}")
+        catch
+          kind, reason ->
+            require Logger
+            Logger.error("Job crashed: \#{kind} - \#{inspect(reason)}")
+        end
       end)
 
       {:reply, :ok, state}

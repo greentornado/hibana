@@ -58,34 +58,34 @@ hibana/
 │   ├── hibana/       # Core framework (Plug + Router)
 │   │   ├── lib/
 │   │   │   ├── hibana/
-│   │   │   │   ├── core/
-│   │   │   │   │   ├── router.ex
-│   │   │   │   │   ├── controller.ex
-│   │   │   │   │   ├── endpoint.ex
-│   │   │   │   │   ├── web_socket.ex
-│   │   │   │   │   ├── live_view.ex
-│   │   │   │   │   ├── queue.ex
-│   │   │   │   │   ├── job.ex
-│   │   │   │   │   ├── otp_cache.ex
-│   │   │   │   │   ├── compiled_router.ex
-│   │   │   │   │   ├── sse.ex
-│   │   │   │   │   ├── cluster.ex
-│   │   │   │   │   ├── file_streamer.ex
-│   │   │   │   │   ├── chunked_upload.ex
-│   │   │   │   │   ├── persistent_queue.ex
-│   │   │   │   │   ├── code_reloader.ex
-│   │   │   │   │   ├── validator.ex
-│   │   │   │   │   ├── circuit_breaker.ex
-│   │   │   │   │   ├── cron.ex
-│   │   │   │   │   ├── pipeline.ex
-│   │   │   │   │   ├── test_helpers.ex
-│   │   │   │   │   ├── event_store.ex
-│   │   │   │   │   ├── features.ex
-│   │   │   │   │   ├── warmup.ex
-│   │   │   │   │   └── plugin/
+│   │   │   │   ├── router.ex
+│   │   │   │   ├── router/
+│   │   │   │   │   └── dsl.ex
+│   │   │   │   ├── controller.ex
+│   │   │   │   ├── endpoint.ex
+│   │   │   │   ├── web_socket.ex
+│   │   │   │   ├── live_view.ex
+│   │   │   │   ├── queue.ex
+│   │   │   │   ├── job.ex
+│   │   │   │   ├── otp_cache.ex
+│   │   │   │   ├── compiled_router.ex
+│   │   │   │   ├── sse.ex
+│   │   │   │   ├── cluster.ex
+│   │   │   │   ├── file_streamer.ex
+│   │   │   │   ├── chunked_upload.ex
+│   │   │   │   ├── persistent_queue.ex
+│   │   │   │   ├── code_reloader.ex
+│   │   │   │   ├── validator.ex
+│   │   │   │   ├── circuit_breaker.ex
+│   │   │   │   ├── cron.ex
+│   │   │   │   ├── pipeline.ex
+│   │   │   │   ├── test_helpers.ex
+│   │   │   │   ├── event_store.ex
+│   │   │   │   ├── features.ex
+│   │   │   │   ├── warmup.ex
 │   │   │   │   └── plugin.ex
 │   │   └── test/
-│   ├── hibana_plugins/     # Built-in plugins (35 plugins)
+│   ├── hibana_plugins/     # Built-in plugins (37 plugins)
 │   │   └── lib/
 │   ├── hibana_ecto/        # Ecto database support (MySQL, PostgreSQL, MongoDB)
 │   │   └── lib/
@@ -125,7 +125,7 @@ hibana/
 - **Features** - Feature toggle system for enabling/disabling components via config
 - **Warmup** - Pre-load data and compile templates on startup
 
-### Built-in Plugins (35 plugins)
+### Built-in Plugins (37 plugins)
 
 | Plugin | Description |
 |--------|-------------|
@@ -396,30 +396,30 @@ end
 
 | File | Purpose |
 |------|---------|
-| `lib/hibana/core/router.ex` | DSL for routes |
-| `lib/hibana/core/controller.ex` | Controller base |
-| `lib/hibana/core/endpoint.ex` | HTTP server |
-| `lib/hibana/core/web_socket.ex` | WebSocket behavior |
-| `lib/hibana/core/live_view.ex` | LiveView pattern |
-| `lib/hibana/core/queue.ex` | Background job queue |
-| `lib/hibana/core/otp_cache.ex` | GenServer cache |
-| `lib/hibana/core/plugin.ex` | Plugin behavior |
-| `lib/hibana/core/gen_server.ex` | Base Genserver |
-| `lib/hibana/core/compiled_router.ex` | Compiled route dispatch |
-| `lib/hibana/core/sse.ex` | Server-Sent Events |
-| `lib/hibana/core/cluster.ex` | Cluster & distributed PubSub |
-| `lib/hibana/core/file_streamer.ex` | Zero-copy file streaming |
-| `lib/hibana/core/chunked_upload.ex` | Chunked/resumable uploads |
-| `lib/hibana/core/persistent_queue.ex` | Persistent queue with disk spillover |
-| `lib/hibana/core/code_reloader.ex` | Hot code reloading for dev |
-| `lib/hibana/core/validator.ex` | Request parameter validation |
-| `lib/hibana/core/circuit_breaker.ex` | Circuit breaker for external services |
-| `lib/hibana/core/cron.ex` | Cron scheduler |
-| `lib/hibana/core/pipeline.ex` | Middleware pipeline DSL |
-| `lib/hibana/core/test_helpers.ex` | Test utilities |
-| `lib/hibana/core/event_store.ex` | Event sourcing |
-| `lib/hibana/core/features.ex` | Feature toggles |
-| `lib/hibana/core/warmup.ex` | Startup warmup hooks |
+| `lib/hibana/router.ex` | DSL for routes |
+| `lib/hibana/controller.ex` | Controller base |
+| `lib/hibana/endpoint.ex` | HTTP server |
+| `lib/hibana/web_socket.ex` | WebSocket behavior |
+| `lib/hibana/live_view.ex` | LiveView pattern |
+| `lib/hibana/queue.ex` | Background job queue |
+| `lib/hibana/otp_cache.ex` | GenServer cache |
+| `lib/hibana/plugin.ex` | Plugin behavior |
+| `lib/hibana/gen_server.ex` | Base Genserver |
+| `lib/hibana/compiled_router.ex` | Compiled route dispatch |
+| `lib/hibana/sse.ex` | Server-Sent Events |
+| `lib/hibana/cluster.ex` | Cluster & distributed PubSub |
+| `lib/hibana/file_streamer.ex` | Zero-copy file streaming |
+| `lib/hibana/chunked_upload.ex` | Chunked/resumable uploads |
+| `lib/hibana/persistent_queue.ex` | Persistent queue with disk spillover |
+| `lib/hibana/code_reloader.ex` | Hot code reloading for dev |
+| `lib/hibana/validator.ex` | Request parameter validation |
+| `lib/hibana/circuit_breaker.ex` | Circuit breaker for external services |
+| `lib/hibana/cron.ex` | Cron scheduler |
+| `lib/hibana/pipeline.ex` | Middleware pipeline DSL |
+| `lib/hibana/test_helpers.ex` | Test utilities |
+| `lib/hibana/event_store.ex` | Event sourcing |
+| `lib/hibana/features.ex` | Feature toggles |
+| `lib/hibana/warmup.ex` | Startup warmup hooks |
 
 ## Commands
 

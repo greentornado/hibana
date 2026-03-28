@@ -14,12 +14,42 @@ defmodule Hibana.WebSocket.CowboyAdapter do
     conn = Plug.Cowboy.Conn.conn(req)
     conn = Plug.Conn.fetch_query_params(conn)
 
-    case handler.init(conn, handler_opts) do
-      {:ok, _conn, state} ->
-        {:cowboy_websocket, req, %{handler: handler, state: state}}
+    try do
+      case handler.init(conn, handler_opts) do
+        {:ok, _conn, state} ->
+          {:cowboy_websocket, req, %{handler: handler, state: state}}
 
-      {:halt, _conn} ->
-        req = :cowboy_req.reply(403, req)
+        {:halt, _conn} ->
+          req = :cowboy_req.reply(403, req)
+          {:ok, req, %{}}
+
+        other ->
+          require Logger
+          Logger.error("[WebSocket] Handler init returned invalid response: #{inspect(other)}")
+
+          req =
+            :cowboy_req.reply(
+              500,
+              %{"content-type" => "text/plain"},
+              "Invalid WebSocket handler response",
+              req
+            )
+
+          {:ok, req, %{}}
+      end
+    rescue
+      e ->
+        require Logger
+        Logger.error("[WebSocket] Handler init crashed: #{inspect(e)}")
+
+        req =
+          :cowboy_req.reply(
+            500,
+            %{"content-type" => "text/plain"},
+            "WebSocket handler error",
+            req
+          )
+
         {:ok, req, %{}}
     end
   end

@@ -55,7 +55,7 @@ defmodule Mix.Tasks.Gen.Scaffold do
       generate_controller(app, app_module, module_name, singular, plural, fields)
     end
 
-    print_routes(singular, plural, module_name, app_module)
+    inject_routes(singular, plural, module_name, app_module)
   end
 
   defp generate_controller(app, app_module, module_name, singular, plural, _fields) do
@@ -107,6 +107,57 @@ defmodule Mix.Tasks.Gen.Scaffold do
     file = Path.join(controller_path, "#{singular}_controller.ex")
     File.write!(file, controller_content)
     Mix.shell().info("Generated controller at #{file}")
+  end
+
+  defp inject_routes(singular, plural, module_name, app_module) do
+    app = Mix.Project.config()[:app] |> to_string()
+    router_path = Path.join([File.cwd!(), "lib", app, "router.ex"])
+
+    routes_content = """
+
+    # Routes for #{module_name} resource
+    get "/#{plural}", #{app_module}.#{module_name}Controller, :index
+    get "/#{plural}/:id", #{app_module}.#{module_name}Controller, :show
+    post "/#{plural}", #{app_module}.#{module_name}Controller, :create
+    put "/#{plural}/:id", #{app_module}.#{module_name}Controller, :update
+    delete "/#{plural}/:id", #{app_module}.#{module_name}Controller, :delete
+    """
+
+    if File.exists?(router_path) do
+      try do
+        # Read router content
+        content = File.read!(router_path)
+
+        # Find the end of the module (before the last "end")
+        # Insert routes before the final "end"
+        if String.contains?(content, "end") do
+          # Find last occurrence of "end"
+          last_end_index =
+            content |> String.split("end") |> Enum.drop(-1) |> Enum.join("end") |> String.length()
+
+          # Insert routes
+          new_content =
+            String.slice(content, 0, last_end_index) <>
+              "  " <>
+              routes_content <>
+              "\n" <>
+              String.slice(content, last_end_index, String.length(content) - last_end_index)
+
+          File.write!(router_path, new_content)
+          Mix.shell().info("Added routes to #{router_path}")
+        else
+          Mix.shell().error("Could not parse router file structure")
+          print_routes(singular, plural, module_name, app_module)
+        end
+      rescue
+        e ->
+          Mix.shell().error("Could not inject routes: #{inspect(e)}")
+          print_routes(singular, plural, module_name, app_module)
+      end
+    else
+      Mix.shell().info("Router not found at #{router_path}")
+      print_routes(singular, plural, module_name, app_module)
+    end
   end
 
   defp print_routes(_singular, plural, module_name, app_module) do
