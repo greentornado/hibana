@@ -1,4 +1,7 @@
 defmodule EnterpriseSuite.Application do
+  @moduledoc """
+  Application with full enterprise plugin suite.
+  """
   use Application
 
   @impl true
