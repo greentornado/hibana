@@ -82,8 +82,11 @@ defmodule Hibana.CircuitBreaker do
     }
 
     # Store state in ETS for fast concurrent reads
+    # Format: {:state, state_value, failure_count, last_failure}
+    # Format: {:config, timeout}
     :ets.new(name, [:named_table, :public, read_concurrency: true])
-    :ets.insert(name, {state.state, state.failure_count, state.last_failure})
+    :ets.insert(name, {:state, state.state, state.failure_count, state.last_failure})
+    :ets.insert(name, {:config, state.timeout})
 
     {:ok, state}
   end
@@ -155,15 +158,16 @@ defmodule Hibana.CircuitBreaker do
       {:ok, result}
     rescue
       e ->
-        GenServer.cast(name, {:report_result, :failure})
+        # Use call for synchronous failure report (ensures state updated immediately)
+        GenServer.call(name, {:report_result, :failure})
         {:error, e}
     catch
       :exit, reason ->
-        GenServer.cast(name, {:report_result, :failure})
+        GenServer.call(name, {:report_result, :failure})
         {:error, reason}
 
       :throw, value ->
-        GenServer.cast(name, {:report_result, :failure})
+        GenServer.call(name, {:report_result, :failure})
         {:error, {:throw, value}}
     end
   end
@@ -251,6 +255,20 @@ defmodule Hibana.CircuitBreaker do
     {:reply, :ok, new_state}
   end
 
+  def handle_call(:status, _from, state) do
+    {:reply,
+     %{
+       state: state.state,
+       failure_count: state.failure_count,
+       success_count: state.success_count,
+       threshold: state.threshold
+     }, state}
+  end
+
+  def handle_call(:reset, _from, state) do
+    {:reply, :ok, %{state | state: :closed, failure_count: 0, success_count: 0}}
+  end
+
   # Cast versions for better performance (non-blocking)
   def handle_cast({:report_result, :success}, state) do
     new_state = handle_success_result(state)
@@ -272,20 +290,6 @@ defmodule Hibana.CircuitBreaker do
     )
 
     {:noreply, new_state}
-  end
-
-  def handle_call(:status, _from, state) do
-    {:reply,
-     %{
-       state: state.state,
-       failure_count: state.failure_count,
-       success_count: state.success_count,
-       threshold: state.threshold
-     }, state}
-  end
-
-  def handle_call(:reset, _from, state) do
-    {:reply, :ok, %{state | state: :closed, failure_count: 0, success_count: 0}}
   end
 
   def handle_info(:attempt_reset, state) do

@@ -26,9 +26,9 @@ defmodule Hibana.Job do
       GenServer.start_link(__MODULE__, opts, name: name)
     end
 
-    def init(opts) do
+    def init(_opts) do
       # Start a Task.Supervisor for supervised job execution
-      task_sup_opts = [name: :job_task_supervisor, restart: :temporary]
+      task_sup_opts = [name: :job_task_supervisor]
       {:ok, _pid} = Task.Supervisor.start_link(task_sup_opts)
       {:ok, %{}}
     end
@@ -39,13 +39,13 @@ defmodule Hibana.Job do
         try do
           apply(worker_module, :perform, [args])
         rescue
-          e ->
+          _e ->
             require Logger
-            Logger.error("Job failed: \#{inspect(e)}")
+            Logger.error("Job failed")
         catch
-          kind, reason ->
+          _kind, _reason ->
             require Logger
-            Logger.error("Job crashed: \#{kind} - \#{inspect(reason)}")
+            Logger.error("Job crashed")
         end
       end)
 

@@ -71,8 +71,13 @@ defmodule Mix.Tasks.Routes do
     try do
       router_module = Module.concat([router])
 
-      if Code.ensure_loaded?(router_module) and function_exported?(router_module, :__routes__, 0) do
-        router_module.__routes__()
+      if Code.ensure_loaded?(router_module) and
+           (function_exported?(router_module, :__routes__, 0) or
+              function_exported?(router_module, :routes, 0)) do
+        routes_func =
+          if function_exported?(router_module, :routes, 0), do: :routes, else: :__routes__
+
+        apply(router_module, routes_func, [])
         |> Enum.map(fn
           %{path: path, verb: verb, plug: plug, plug_opts: opts} ->
             controller = Module.concat([plug]) |> to_string() |> String.replace("Controller", "")

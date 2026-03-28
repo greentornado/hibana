@@ -31,3 +31,5 @@ priv/uploads/
 # Queue data
 priv/queue/
 **/*/cover
+*.md
+.claude

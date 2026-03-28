@@ -8,7 +8,13 @@ defmodule Hibana.Application do
 
   - `Hibana.Plugin.Registry` - Registry for plugins
   - `Hibana.Plugin.Supervisor` - DynamicSupervisor for plugins
+  - `Hibana.Queue` - Background job queue
+  - `Hibana.OTPCache` - OTP-based cache
   - `Hibana.Endpoint` - HTTP endpoint
+
+  Optional components that can be added to your own supervision tree:
+  - `Hibana.PersistentQueue` - Disk-backed persistent queue
+  - `Hibana.CircuitBreaker` - Circuit breaker for external calls
 
   ## Usage
 
@@ -27,6 +33,8 @@ defmodule Hibana.Application do
   |-------|------|-------------|
   | Plugin.Registry | Registry | Plugin registration |
   | Plugin.Supervisor | DynamicSupervisor | Plugin supervision |
+  | Queue | Worker | Background job queue |
+  | OTPCache | Worker | In-memory cache with TTL |
   | Endpoint | Worker | HTTP server |
   """
 
@@ -37,6 +45,8 @@ defmodule Hibana.Application do
     children = [
       Hibana.Plugin.Registry,
       {DynamicSupervisor, strategy: :one_for_one, name: Hibana.Plugin.Supervisor},
+      Hibana.Queue,
+      Hibana.OTPCache,
       Hibana.Endpoint
     ]
 

@@ -140,30 +140,6 @@ defmodule Mix.Tasks.Gen.Controller do
     """
   end
 
-  defp generate_action("edit") do
-    """
-    def edit(conn, %{id: id}) do
-      json(conn, %{data: %{id: id}})
-    end
-    """
-  end
-
-  defp generate_action("update") do
-    """
-    def update(conn, %{id: id, body: body}) do
-      json(conn, %{data: Map.put(body, :id, id), message: "Updated"})
-    end
-    """
-  end
-
-  defp generate_action("delete") do
-    """
-    def delete(conn, %{id: id}) do
-      json(conn, %{message: "Deleted", id: id})
-    end
-    """
-  end
-
   defp generate_action(other) do
     """
     def #{other}(conn, _params) do

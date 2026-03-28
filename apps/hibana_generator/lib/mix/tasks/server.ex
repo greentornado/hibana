@@ -38,8 +38,8 @@ defmodule Mix.Tasks.Server do
       )
 
     unless opts[:no_compile] do
-      Mix.Task.run("app.start", [])
       Mix.Task.run("compile", [])
+      Mix.Task.run("app.start", [])
     end
 
     app_module = Mix.Project.config()[:app] |> to_string() |> Macro.camelize()

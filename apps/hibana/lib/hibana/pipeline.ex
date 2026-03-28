@@ -66,7 +66,7 @@ defmodule Hibana.Pipeline do
       unquote(block)
       @pipelines {unquote(name), @current_pipeline_plugs}
       Module.delete_attribute(__MODULE__, :current_pipeline_name)
-      Module.deleteAttribute(__MODULE__, :current_pipeline_plugs)
+      Module.delete_attribute(__MODULE__, :current_pipeline_plugs)
     end
   end
 
