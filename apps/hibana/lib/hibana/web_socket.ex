@@ -1,62 +1,75 @@
 defmodule Hibana.WebSocket do
   @moduledoc """
-  WebSocket handler behaviour for Hibana.
+  WebSocket handler behavior with support for both Cowboy and Bandit servers.
 
-  Provides a behaviour with callbacks for handling WebSocket connections,
-  messages, and disconnections. Uses Cowboy's native WebSocket support
-  for microsecond-level latency.
+  Provides a unified callback-based API for WebSocket connections that works
+  seamlessly with both Cowboy (Erlang) and Bandit (Pure Elixir) HTTP servers.
+  The framework automatically detects which server you're using and selects the
+  appropriate adapter.
 
   ## Features
 
-  - Direct Cowboy WebSocket integration with zero middleware overhead
-  - Text and binary message handling
-  - Process message forwarding via `handle_info/2`
-  - Automatic connection/disconnection lifecycle management
+  - **Dual Server Support**: Works with both Cowboy and Bandit automatically
+  - **Direct WebSocket integration** with zero middleware overhead
+  - Text and binary message support
+  - Connection lifecycle management (connect, disconnect, heartbeat)
+  - Mailbox-based message passing for external process communication
+  - Automatic ping/pong handling for connection keepalive
+
+  ## Server Compatibility
+
+  | Feature | Cowboy | Bandit | Notes |
+  |---------|--------|--------|-------|
+  | Text frames | ✅ | ✅ | Full support |
+  | Binary frames | ✅ | ✅ | Full support |
+  | Ping/Pong | ✅ | ✅ | Automatic |
+  | Compression | ✅ | ✅ | Per-message deflate |
+  | Subprotocols | ✅ | ✅ | Supported |
 
   ## Usage
+
+  Create a WebSocket handler module:
 
       defmodule MyApp.ChatSocket do
         use Hibana.WebSocket
 
-        def handle_in(msg, state) do
-          {:reply, {:text, "echo: \#{msg}"}, state}
+        @impl true
+        def init(conn, opts) do
+          room = conn.params["room"] || "general"
+          {:ok, conn, %{room: room, user: nil}}
+        end
+
+        @impl true
+        def handle_connect(_headers, state) do
+          {:ok, state}
+        end
+
+        @impl true
+        def handle_in(message, state) do
+          {:reply, {:text, "Echo: " <> message}, state}
         end
       end
 
-  ## Routing
+  Add to your router:
 
-  In your router, call `Hibana.WebSocket.upgrade/3`:
+      get "/ws", MyApp.ChatSocket, :upgrade
 
-      get "/ws/chat", fn conn ->
-        Hibana.WebSocket.upgrade(conn, MyApp.ChatSocket)
-      end
+  ## Configuration
 
-  Or in a controller:
-
-      def websocket(conn) do
-        Hibana.WebSocket.upgrade(conn, MyApp.ChatSocket)
-      end
+  No special configuration needed - the framework auto-detects your server:
+  - If using `Hibana.Endpoint` → Cowboy adapter
+  - If using `Hibana.BanditEndpoint` → Bandit adapter
 
   ## Callbacks
 
   | Callback | Description |
   |----------|-------------|
-  | `init/2` | Called on connection upgrade |
-  | `handle_connect/2` | Called after WebSocket handshake |
-  | `handle_in/2` | Called for text messages |
-  | `handle_binary/2` | Called for binary messages |
-  | `handle_info/2` | Called for Erlang process messages |
-  | `handle_disconnect/2` | Called on connection close |
-
-  ## Return Values
-
-  Callbacks return tuples:
-
-  - `{:ok, state}` - Continue with updated state
-  - `{:reply, {:text, data}, state}` - Send a text frame
-  - `{:reply, {:binary, data}, state}` - Send a binary frame
-  - `{:push, {:text, data}, state}` - Push from `handle_info`
-  - `{:stop, state}` - Close the connection
+  | `init/2` | Initialize connection state |
+  | `handle_connect/2` | Called when WebSocket connection established |
+  | `handle_in/2` | Handle text messages |
+  | `handle_binary/2` | Handle binary messages |
+  | `handle_info/2` | Handle Elixir messages sent to socket process |
+  | `handle_disconnect/2` | Called when connection closes |
   """
 
   alias Hibana.Endpoint
@@ -141,8 +154,11 @@ defmodule Hibana.WebSocket do
   @doc """
   Upgrades an HTTP connection to a WebSocket connection.
 
-  Initiates the Cowboy WebSocket upgrade handshake. The `handler` module
+  Initiates the WebSocket upgrade handshake. The `handler` module
   must `use Hibana.WebSocket` and implement the required callbacks.
+
+  This function automatically detects whether you're using Cowboy or Bandit
+  and uses the appropriate adapter.
 
   ## Parameters
 
@@ -172,7 +188,19 @@ defmodule Hibana.WebSocket do
     |> put_private(:websocket_handler_opts, handler_opts)
     |> upgrade_adapter(
       :websocket,
-      {Hibana.WebSocket.CowboyAdapter, {handler, handler_opts}, %{idle_timeout: 60_000}}
+      websocket_adapter(conn, handler, handler_opts)
     )
+  end
+
+  # Choose the appropriate WebSocket adapter based on the server
+  # Uses efficient pattern matching instead of string detection
+  defp websocket_adapter(_conn, handler, handler_opts) do
+    # Check if Bandit is available and being used
+    if Code.ensure_loaded?(Bandit.Adapter) do
+      {Hibana.WebSocket.BanditAdapter, {handler, handler_opts}, %{idle_timeout: 60_000}}
+    else
+      # Default to Cowboy adapter
+      {Hibana.WebSocket.CowboyAdapter, {handler, handler_opts}, %{idle_timeout: 60_000}}
+    end
   end
 end

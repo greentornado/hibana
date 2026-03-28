@@ -69,6 +69,7 @@ defmodule Hibana.Core.MixProject do
           Hibana.CompiledRouter,
           Hibana.Controller,
           Hibana.Endpoint,
+          Hibana.BanditEndpoint,
           Hibana.Pipeline,
           Hibana.Validator,
           Hibana.TestHelpers
@@ -76,6 +77,7 @@ defmodule Hibana.Core.MixProject do
         "Real-time": [
           Hibana.WebSocket,
           Hibana.WebSocket.CowboyAdapter,
+          Hibana.WebSocket.BanditAdapter,
           Hibana.LiveView,
           Hibana.SSE,
           Hibana.Cluster
@@ -132,6 +134,7 @@ defmodule Hibana.Core.MixProject do
       {:plug, "~> 1.16"},
       {:cowboy, "~> 2.14"},
       {:plug_cowboy, "~> 2.7"},
+      {:bandit, "~> 1.0", optional: true},
       {:ranch, "~> 2.2"},
       {:mime, "~> 2.0"},
       {:jason, "~> 1.4"},

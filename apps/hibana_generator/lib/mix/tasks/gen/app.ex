@@ -34,24 +34,35 @@ defmodule Mix.Tasks.Gen.App do
 
     - `args` - Command-line arguments: `[app_name_or_path, ...options]`
 
+  ## Options
+
+    - `--skip-git` - Skip git initialization
+    - `--hibana-path PATH` - Path to Hibana umbrella project
+    - `--bandit` - Use Bandit HTTP server instead of Cowboy
+
   ## Examples
 
       ```
       mix gen.app my_app
       mix gen.app ~/projects/my_app --skip-git
+      mix gen.app my_app --bandit
       ```
   """
   @impl true
   def run(args) do
     {opts, args, _} =
-      OptionParser.parse(args, switches: [skip_git: :boolean, hibana_path: :string])
+      OptionParser.parse(args,
+        switches: [skip_git: :boolean, hibana_path: :string, bandit: :boolean]
+      )
 
     case args do
       [path | _] ->
         generate_app(path, opts)
 
       _ ->
-        Mix.raise("Usage: mix gen.app <app_name_or_path> [--skip-git] [--hibana-path PATH]")
+        Mix.raise(
+          "Usage: mix gen.app <app_name_or_path> [--skip-git] [--hibana-path PATH] [--bandit]"
+        )
     end
   end
 
@@ -73,9 +84,9 @@ defmodule Mix.Tasks.Gen.App do
     File.mkdir_p!("#{app_path}/config")
     File.mkdir_p!("#{app_path}/test")
 
-    create_mix_exs(app_path, app_name, app_module, hibana_path)
+    create_mix_exs(app_path, app_name, app_module, hibana_path, opts)
     create_config(app_path, app_name, app_module)
-    create_endpoint(app_path, app_name, app_module)
+    create_endpoint(app_path, app_name, app_module, opts)
     create_router(app_path, app_name, app_module)
     create_application(app_path, app_name, app_module)
     create_gitignore(app_path)
@@ -122,20 +133,30 @@ defmodule Mix.Tasks.Gen.App do
     end
   end
 
-  defp create_mix_exs(path, app_name, app_module, hibana_path) do
+  defp create_mix_exs(path, app_name, app_module, hibana_path, opts) do
+    use_bandit = opts[:bandit] || false
+
+    server_dep =
+      if use_bandit do
+        "{:bandit, \"~> 1.0\"}"
+      else
+        "{:plug_cowboy, \"~> 2.7\"}"
+      end
+
     deps =
       if hibana_path do
         """
             [
               {:hibana, path: "#{hibana_path}/hibana"},
-              {:hibana_plugins, path: "#{hibana_path}/hibana_plugins"}
+              {:hibana_plugins, path: "#{hibana_path}/hibana_plugins"},
+              #{server_dep}
             ]
         """
       else
         """
             [
               {:plug, "~> 1.16"},
-              {:plug_cowboy, "~> 2.7"},
+              #{server_dep},
               {:jason, "~> 1.4"}
             ]
         """
@@ -191,43 +212,84 @@ defmodule Mix.Tasks.Gen.App do
     File.write!("#{path}/config/config.exs", content)
   end
 
-  defp create_endpoint(path, app_name, app_module) do
+  defp create_endpoint(path, app_name, app_module, opts) do
+    use_bandit = opts[:bandit] || false
+
     content =
-      if hibana_available?() do
-        """
-        defmodule #{app_module}.Endpoint do
-          use Hibana.Endpoint, otp_app: :#{app_name}
+      cond do
+        hibana_available?() and use_bandit ->
+          """
+          defmodule #{app_module}.Endpoint do
+            use Hibana.BanditEndpoint, otp_app: :#{app_name}
 
-          plug Hibana.Plugins.RequestId
-          plug Hibana.Plugins.Logger
-          plug #{app_module}.Router
-        end
-        """
-      else
-        """
-        defmodule #{app_module}.Endpoint do
-          use Plug.Builder
-
-          plug Plug.Logger
-          plug #{app_module}.Router
-
-          def start_link(_opts \\\\ []) do
-            port = Application.get_env(:#{app_name}, :port, 4000)
-
-            IO.puts("\\n  Hibana server running at http://localhost:\#{port}\\n")
-            Plug.Cowboy.http(__MODULE__, [], port: port)
+            plug Hibana.Plugins.RequestId
+            plug Hibana.Plugins.Logger
+            plug #{app_module}.Router
           end
+          """
 
-          def child_spec(opts) do
-            %{
-              id: __MODULE__,
-              start: {__MODULE__, :start_link, [opts]},
-              type: :worker,
-              restart: :permanent
-            }
+        hibana_available?() ->
+          """
+          defmodule #{app_module}.Endpoint do
+            use Hibana.Endpoint, otp_app: :#{app_name}
+
+            plug Hibana.Plugins.RequestId
+            plug Hibana.Plugins.Logger
+            plug #{app_module}.Router
           end
-        end
-        """
+          """
+
+        use_bandit ->
+          """
+          defmodule #{app_module}.Endpoint do
+            use Plug.Builder
+
+            plug Plug.Logger
+            plug #{app_module}.Router
+
+            def start_link(_opts \\ []) do
+              port = Application.get_env(:#{app_name}, :port, 4000)
+
+              IO.puts("\\n  Bandit server running at http://localhost:\#{port}\\n")
+              Bandit.start_link(plug: __MODULE__, scheme: :http, options: [port: port])
+            end
+
+            def child_spec(opts) do
+              %{
+                id: __MODULE__,
+                start: {__MODULE__, :start_link, [opts]},
+                type: :worker,
+                restart: :permanent
+              }
+            end
+          end
+          """
+
+        true ->
+          """
+          defmodule #{app_module}.Endpoint do
+            use Plug.Builder
+
+            plug Plug.Logger
+            plug #{app_module}.Router
+
+            def start_link(_opts \\ []) do
+              port = Application.get_env(:#{app_name}, :port, 4000)
+
+              IO.puts("\\n  Cowboy server running at http://localhost:\#{port}\\n")
+              Plug.Cowboy.http(__MODULE__, [], port: port)
+            end
+
+            def child_spec(opts) do
+              %{
+                id: __MODULE__,
+                start: {__MODULE__, :start_link, [opts]},
+                type: :worker,
+                restart: :permanent
+              }
+            end
+          end
+          """
       end
 
     File.write!("#{path}/lib/#{app_name}/endpoint.ex", content)
