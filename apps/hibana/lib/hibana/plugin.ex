@@ -58,6 +58,10 @@ defmodule Hibana.Plugin do
         opts
       end
 
+      def call(conn, _opts) do
+        conn
+      end
+
       def before_send(conn, _opts) do
         conn
       end
@@ -66,7 +70,7 @@ defmodule Hibana.Plugin do
         Agent.start_link(fn -> opts end)
       end
 
-      defoverridable init: 1, before_send: 2, start_link: 1
+      defoverridable init: 1, call: 2, before_send: 2, start_link: 1
     end
   end
 end

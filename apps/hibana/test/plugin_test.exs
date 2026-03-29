@@ -4,6 +4,20 @@ defmodule Hibana.PluginTest do
 
   alias Hibana.Plugin
 
+  defmodule StatefulPlugin do
+    use Plugin
+
+    def start_link(opts) do
+      Agent.start_link(fn -> opts end, name: __MODULE__)
+    end
+
+    def call(conn, _opts) do
+      # Access state from Agent using the registered name
+      state = Agent.get(__MODULE__, & &1)
+      Plug.Conn.assign(conn, :state, state)
+    end
+  end
+
   describe "Plugin behaviour callbacks" do
     test "defines init/1 callback" do
       callbacks = Plugin.behaviour_info(:callbacks)
@@ -263,17 +277,7 @@ defmodule Hibana.PluginTest do
 
   describe "Plugin state management" do
     test "plugin can maintain state via Agent" do
-      defmodule StatefulPlugin do
-        use Plugin
-
-        def call(conn, _opts) do
-          # Access state from Agent
-          state = Agent.get(__MODULE__, & &1)
-          Plug.Conn.assign(conn, :state, state)
-        end
-      end
-
-      # Start the plugin
+      # Start the plugin (already defined at compile time above)
       {:ok, pid} = StatefulPlugin.start_link(count: 0)
 
       conn = conn(:get, "/")

@@ -68,19 +68,22 @@ defmodule Hibana.ChunkedUpload do
     dest_path = Path.join(upload_dir, "#{generate_id()}-#{safe_filename}")
 
     case stream_body_to_file(conn, dest_path, max_size) do
-      {:ok, conn, bytes_written} ->
+      {:ok, _conn, bytes_written} ->
+        checksum = compute_sha256(dest_path)
+
         file_info = %{
           filename: safe_filename,
           path: dest_path,
           size: bytes_written,
-          content_type: get_content_type(conn)
+          content_type: get_content_type(conn),
+          checksum: checksum
         }
 
-        {:ok, conn, file_info}
+        {:ok, file_info}
 
       {:error, :too_large} ->
         File.rm(dest_path)
-        {:error, :too_large}
+        {:error, :file_too_large}
 
       {:error, reason} ->
         File.rm(dest_path)
@@ -140,8 +143,8 @@ defmodule Hibana.ChunkedUpload do
           else
             progress = %{
               upload_id: upload_id,
-              received: received,
-              total: total_chunks,
+              received_chunks: received,
+              total_chunks: total_chunks,
               percent: Float.round(received / total_chunks * 100, 1)
             }
 
@@ -179,6 +182,70 @@ defmodule Hibana.ChunkedUpload do
 
       _ ->
         :ok
+    end
+  end
+
+  # Alias for backward compatibility with tests
+  def cleanup_stale_uploads(upload_dir, opts \\ []) do
+    max_age = Keyword.get(opts, :max_age, 86400)
+    cleanup_stale(upload_dir, max_age)
+  end
+
+  @doc """
+  Get the status of a chunked upload.
+  Returns a map with upload progress information.
+  """
+  def upload_status(upload_dir, upload_id) do
+    upload_path = Path.join(upload_dir, upload_id)
+
+    case File.stat(upload_path) do
+      {:ok, %{size: size}} ->
+        %{
+          upload_id: upload_id,
+          size: size,
+          status: :uploading,
+          chunks_received: 0
+        }
+
+      {:error, _} ->
+        %{
+          upload_id: upload_id,
+          size: 0,
+          status: :not_found
+        }
+    end
+  end
+
+  @doc """
+  List all active uploads in the upload directory.
+  """
+  def list_uploads(upload_dir) do
+    case File.ls(upload_dir) do
+      {:ok, entries} ->
+        entries
+        |> Enum.filter(&File.dir?(Path.join(upload_dir, &1)))
+        |> Enum.map(fn id ->
+          case upload_status(upload_dir, id) do
+            %{status: :not_found} -> nil
+            status -> status
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  @doc """
+  Abort an upload and clean up its temporary files.
+  """
+  def abort_upload(upload_dir, upload_id) do
+    upload_path = Path.join(upload_dir, upload_id)
+
+    case File.rm_rf(upload_path) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -293,6 +360,15 @@ defmodule Hibana.ChunkedUpload do
       {n, _} -> n
       :error -> default
     end
+  end
+
+  defp compute_sha256(path) do
+    File.stream!(path, [], 4096)
+    |> Enum.reduce(:crypto.hash_init(:sha256), fn chunk, acc ->
+      :crypto.hash_update(acc, chunk)
+    end)
+    |> :crypto.hash_final()
+    |> Base.encode16(case: :lower)
   end
 
   defp generate_id, do: :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)

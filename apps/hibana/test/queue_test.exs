@@ -25,6 +25,10 @@ defmodule Hibana.QueueTest do
     end
   end
 
+  defmodule TestWorker do
+    def perform(_args), do: :ok
+  end
+
   describe "Queue API" do
     test "start_link with default name" do
       {:ok, pid} = Queue.start_link(name: :test_default_queue)
@@ -35,11 +39,7 @@ defmodule Hibana.QueueTest do
     test "enqueue returns job id" do
       {:ok, pid} = Queue.start_link(name: :test_api_queue)
 
-      defmodule SimpleWorker do
-        def perform(_args), do: :ok
-      end
-
-      result = Queue.enqueue(SimpleWorker, %{}, [], :test_api_queue)
+      result = Queue.enqueue(TestWorker, %{}, [], :test_api_queue)
       assert {:ok, job_id} = result
       assert is_binary(job_id)
 

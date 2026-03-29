@@ -112,6 +112,10 @@ defmodule Hibana.CodeReloader do
     |> Enum.map(fn {file, _} -> file end)
   end
 
+  def reload do
+    recompile()
+  end
+
   defp recompile do
     try do
       IEx.Helpers.recompile()

@@ -180,6 +180,14 @@ defmodule Hibana.TestHelpers do
   end
 
   @doc """
+  Returns the decoded JSON body without checking status code.
+  Assumes status 200 if not specified.
+  """
+  def json_response(conn) do
+    json_response(conn, 200)
+  end
+
+  @doc """
   Asserts the response has the expected status code and returns the HTML body.
 
   ## Parameters
@@ -201,6 +209,14 @@ defmodule Hibana.TestHelpers do
   end
 
   @doc """
+  Returns the HTML body without checking status code.
+  Assumes status 200 if not specified.
+  """
+  def html_response(conn) do
+    html_response(conn, 200)
+  end
+
+  @doc """
   Asserts the response has the expected status code and returns the text body.
 
   ## Parameters
@@ -219,6 +235,14 @@ defmodule Hibana.TestHelpers do
     end
 
     conn.resp_body
+  end
+
+  @doc """
+  Returns the text body without checking status code.
+  Assumes status 200 if not specified.
+  """
+  def text_response(conn) do
+    text_response(conn, 200)
   end
 
   @doc """
@@ -253,6 +277,74 @@ defmodule Hibana.TestHelpers do
     end
 
     location
+  end
+
+  @doc """
+  Asserts that the response has the expected status code.
+
+  ## Parameters
+
+    - `conn` - The response connection
+    - `status` - The expected HTTP status code
+
+  ## Returns
+
+  The status code if it matches, otherwise raises an error.
+  """
+  def assert_status(conn, status) do
+    unless conn.status == status do
+      raise ExUnit.AssertionError,
+        message: "Expected status #{status}, got #{conn.status}"
+    end
+
+    conn.status
+  end
+
+  @doc """
+  Asserts that a response header has the expected value.
+
+  ## Parameters
+
+    - `conn` - The response connection
+    - `header` - The header name (lowercase)
+    - `value` - The expected header value
+
+  ## Returns
+
+  The header value if it matches, otherwise raises an error.
+  """
+  def assert_header(conn, header, value) do
+    actual = Plug.Conn.get_resp_header(conn, header)
+
+    unless actual == [value] do
+      raise ExUnit.AssertionError,
+        message: "Expected header #{header} to be #{inspect(value)}, got #{inspect(actual)}"
+    end
+
+    value
+  end
+
+  @doc """
+  Asserts that the JSON response body matches the expected value.
+
+  ## Parameters
+
+    - `conn` - The response connection (must have JSON content-type)
+    - `expected` - The expected decoded JSON value
+
+  ## Returns
+
+  The decoded JSON body if it matches, otherwise raises an error.
+  """
+  def assert_json(conn, expected) do
+    body = json_response(conn, conn.status)
+
+    unless body == expected do
+      raise ExUnit.AssertionError,
+        message: "Expected JSON #{inspect(expected)}, got #{inspect(body)}"
+    end
+
+    body
   end
 
   @doc """

@@ -208,10 +208,17 @@ defmodule Hibana.PersistentQueue do
   end
 
   def handle_call(:stats, _from, state) do
+    memory_jobs = :ets.info(state.ets_table, :size)
+    disk_jobs = :dets.info(state.dets_table, :size)
+
     stats = %{
-      memory_jobs: :ets.info(state.ets_table, :size),
-      disk_jobs: :dets.info(state.dets_table, :size),
+      memory_jobs: memory_jobs,
+      disk_jobs: disk_jobs,
+      disk: disk_jobs,
+      pending: memory_jobs + disk_jobs,
       in_flight: state.in_flight,
+      completed: 0,
+      failed: 0,
       paused: state.paused,
       concurrency: state.concurrency,
       max_memory: state.max_memory_jobs,
@@ -303,20 +310,27 @@ defmodule Hibana.PersistentQueue do
   def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
     # This is a backup cleanup in case job_done/job_failed messages are lost
     # Find and remove the correlation_id associated with this monitor_ref
-    correlation_id = Enum.find(state.worker_refs, fn {_, v} -> v == ref end) |> elem(0)
+    worker_entry = Enum.find(state.worker_refs, fn {_, v} -> v == ref end)
 
-    new_worker_refs =
-      if correlation_id,
-        do: Map.delete(state.worker_refs, correlation_id),
-        else: state.worker_refs
+    new_state =
+      if worker_entry do
+        correlation_id = elem(worker_entry, 0)
 
-    {:noreply,
-     %{
-       state
-       | in_flight: max(state.in_flight - 1, 0),
-         workers: MapSet.delete(state.workers, ref),
-         worker_refs: new_worker_refs
-     }}
+        %{
+          state
+          | in_flight: max(state.in_flight - 1, 0),
+            workers: MapSet.delete(state.workers, ref),
+            worker_refs: Map.delete(state.worker_refs, correlation_id)
+        }
+      else
+        # Worker already cleaned up, just remove from workers set
+        %{
+          state
+          | workers: MapSet.delete(state.workers, ref)
+        }
+      end
+
+    {:noreply, new_state}
   end
 
   def handle_info({:recovery_complete, count}, state) do
