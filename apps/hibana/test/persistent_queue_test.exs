@@ -3,6 +3,13 @@ defmodule Hibana.PersistentQueueTest do
 
   alias Hibana.PersistentQueue
 
+  defmodule TestWorker do
+    def perform(args) do
+      send(args[:test_pid], {:job_done, args[:value]})
+      :ok
+    end
+  end
+
   setup do
     queue_name = :"test_queue_#{:rand.uniform(10000)}"
     tmp_dir = Path.join(System.tmp_dir!(), "pq_test_#{:rand.uniform(10000)}")
@@ -13,7 +20,8 @@ defmodule Hibana.PersistentQueueTest do
         name: queue_name,
         disk_path: tmp_dir,
         max_memory_items: 100,
-        concurrency: 2
+        concurrency: 2,
+        poll_interval: 100
       )
 
     on_exit(fn ->
@@ -29,94 +37,57 @@ defmodule Hibana.PersistentQueueTest do
     {:ok, queue: queue_name, pid: pid, tmp_dir: tmp_dir}
   end
 
-  describe "enqueue/2" do
+  describe "enqueue/4" do
     test "successfully enqueues job", %{queue: queue} do
-      job = %{task: "test", data: "value"}
+      test_pid = self()
 
-      :ok = PersistentQueue.enqueue(queue, job)
+      {:ok, job_id} =
+        PersistentQueue.enqueue(queue, TestWorker, %{test_pid: test_pid, value: 42}, priority: 5)
 
-      # Verify job is in queue
-      {:ok, dequeued} = PersistentQueue.dequeue(queue)
-      assert dequeued.task == "test"
+      assert is_binary(job_id)
+
+      # Wait for job to be processed
+      assert_receive {:job_done, 42}, 2000
     end
 
-    test "assigns unique job id", %{queue: queue} do
-      job1 = %{task: "job1"}
-      job2 = %{task: "job2"}
+    test "assigns unique job id for each enqueue", %{queue: queue} do
+      test_pid = self()
 
-      :ok = PersistentQueue.enqueue(queue, job1)
-      :ok = PersistentQueue.enqueue(queue, job2)
+      {:ok, id1} = PersistentQueue.enqueue(queue, TestWorker, %{test_pid: test_pid, value: 1}, [])
+      {:ok, id2} = PersistentQueue.enqueue(queue, TestWorker, %{test_pid: test_pid, value: 2}, [])
 
-      {:ok, result1} = PersistentQueue.dequeue(queue)
-      {:ok, result2} = PersistentQueue.dequeue(queue)
-
-      assert result1.id != result2.id
-    end
-  end
-
-  describe "dequeue/1" do
-    test "returns job when available", %{queue: queue} do
-      job = %{task: "test"}
-      :ok = PersistentQueue.enqueue(queue, job)
-
-      {:ok, result} = PersistentQueue.dequeue(queue)
-
-      assert result.task == "test"
-      assert is_binary(result.id)
-      assert result.inserted_at
+      assert id1 != id2
     end
 
-    test "returns empty when no jobs", %{queue: queue} do
-      result = PersistentQueue.dequeue(queue)
+    test "supports priority option", %{queue: queue} do
+      test_pid = self()
 
-      assert result == :empty
-    end
-
-    test "respects priority order", %{queue: queue} do
       # Enqueue with different priorities
-      :ok = PersistentQueue.enqueue(queue, %{task: "low"}, priority: 10)
-      :ok = PersistentQueue.enqueue(queue, %{task: "high"}, priority: 1)
-      :ok = PersistentQueue.enqueue(queue, %{task: "medium"}, priority: 5)
+      {:ok, _} =
+        PersistentQueue.enqueue(queue, TestWorker, %{test_pid: test_pid, value: 1}, priority: 10)
 
-      # Should dequeue high priority first
-      {:ok, job1} = PersistentQueue.dequeue(queue)
-      assert job1.task == "high"
+      {:ok, _} =
+        PersistentQueue.enqueue(queue, TestWorker, %{test_pid: test_pid, value: 2}, priority: 1)
 
-      {:ok, job2} = PersistentQueue.dequeue(queue)
-      assert job2.task == "medium"
-
-      {:ok, job3} = PersistentQueue.dequeue(queue)
-      assert job3.task == "low"
+      # Both jobs should be processed
+      assert_receive {:job_done, _}, 2000
+      assert_receive {:job_done, _}, 2000
     end
-  end
 
-  describe "ack/2" do
-    test "acknowledges job completion", %{queue: queue} do
-      job = %{task: "test"}
-      :ok = PersistentQueue.enqueue(queue, job)
+    test "supports delay option", %{queue: queue} do
+      test_pid = self()
 
-      {:ok, %{id: job_id}} = PersistentQueue.dequeue(queue)
+      start_time = System.monotonic_time(:millisecond)
 
-      :ok = PersistentQueue.ack(queue, job_id)
+      {:ok, _} =
+        PersistentQueue.enqueue(queue, TestWorker, %{test_pid: test_pid, value: 1}, delay: 500)
 
-      # Job should be removed from queue
-      result = PersistentQueue.dequeue(queue)
-      assert result == :empty
-    end
-  end
+      # Job should be processed after delay
+      assert_receive {:job_done, 1}, 2000
 
-  describe "nack/3" do
-    test "requeues failed job with retry", %{queue: queue} do
-      job = %{task: "test"}
-      :ok = PersistentQueue.enqueue(queue, job)
-
-      {:ok, %{id: job_id}} = PersistentQueue.dequeue(queue)
-
-      :ok = PersistentQueue.nack(queue, job_id, error: "failed")
-
-      # Job should be back in queue
-      {:ok, result} = PersistentQueue.dequeue(queue)
-      assert result.task == "test"
+      end_time = System.monotonic_time(:millisecond)
+      # Should have been delayed
+      assert end_time - start_time >= 400
     end
   end
 
@@ -128,6 +99,47 @@ defmodule Hibana.PersistentQueueTest do
       assert Map.has_key?(stats, :pending)
       assert Map.has_key?(stats, :in_flight)
       assert Map.has_key?(stats, :completed)
+      assert Map.has_key?(stats, :failed)
+    end
+  end
+
+  describe "pause/1 and resume/1" do
+    test "pauses and resumes job processing", %{queue: queue} do
+      test_pid = self()
+
+      # Pause the queue
+      :ok = PersistentQueue.pause(queue)
+
+      # Enqueue a job
+      {:ok, _} = PersistentQueue.enqueue(queue, TestWorker, %{test_pid: test_pid, value: 1}, [])
+
+      # Job should not be processed while paused
+      refute_receive {:job_done, 1}, 500
+
+      # Resume the queue
+      :ok = PersistentQueue.resume(queue)
+
+      # Now job should be processed
+      assert_receive {:job_done, 1}, 2000
+    end
+  end
+
+  describe "clear/1" do
+    test "clears all jobs from queue", %{queue: queue, tmp_dir: tmp_dir} do
+      test_pid = self()
+
+      # Enqueue some jobs
+      for i <- 1..3 do
+        {:ok, _} = PersistentQueue.enqueue(queue, TestWorker, %{test_pid: test_pid, value: i}, [])
+      end
+
+      # Clear the queue
+      :ok = PersistentQueue.clear(queue)
+
+      # Queue should be empty
+      stats = PersistentQueue.stats(queue)
+      assert stats.pending == 0
+      assert stats.disk == 0
     end
   end
 end

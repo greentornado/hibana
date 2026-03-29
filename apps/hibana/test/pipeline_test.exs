@@ -6,8 +6,8 @@ defmodule Hibana.PipelineTest do
   describe "__using__/1" do
     test "imports Pipeline macros" do
       defmodule TestRouter do
+        # Use only CompiledRouter which includes Pipeline functionality
         use Hibana.CompiledRouter
-        import Hibana.Pipeline
 
         pipeline :api do
           plug Hibana.Plugins.Logger
@@ -24,7 +24,6 @@ defmodule Hibana.PipelineTest do
     test "defines named pipeline" do
       defmodule PipelineRouter do
         use Hibana.CompiledRouter
-        import Hibana.Pipeline
 
         pipeline :api do
           plug Hibana.Plugins.Logger
@@ -47,7 +46,6 @@ defmodule Hibana.PipelineTest do
     test "creates scope with path and pipeline" do
       defmodule ScopeRouter do
         use Hibana.CompiledRouter
-        import Hibana.Pipeline
 
         pipeline :api do
           plug Hibana.Plugins.Logger
@@ -68,7 +66,6 @@ defmodule Hibana.PipelineTest do
       # This is expected behavior - the warning documents the limitation
       defmodule LimitedScopeRouter do
         use Hibana.CompiledRouter
-        import Hibana.Pipeline
 
         scope "/api", [] do
           get "/test", fn conn -> Hibana.Controller.text(conn, "OK") end
@@ -83,7 +80,6 @@ defmodule Hibana.PipelineTest do
     test "accumulates plugs within pipeline" do
       defmodule PlugRouter do
         use Hibana.CompiledRouter
-        import Hibana.Pipeline
 
         pipeline :test do
           plug Hibana.Plugins.Logger
