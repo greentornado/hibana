@@ -18,7 +18,7 @@ defmodule StreamingServer.UploadController do
   @doc """
   Standard file upload (uses Plug.Upload for small files).
   """
-  def upload(conn, _params) do
+  def upload(conn) do
     case conn.body_params do
       %{"file" => %{filename: filename, path: temp_path}} ->
         dest_path = Path.join(@upload_dir, filename)
@@ -50,7 +50,7 @@ defmodule StreamingServer.UploadController do
   @doc """
   Large file upload using ChunkedUpload (supports 100GB+ files).
   """
-  def chunked_upload(conn, _params) do
+  def chunked_upload(conn) do
     upload_id = generate_upload_id()
     dest_dir = Path.join(@upload_dir, upload_id)
     File.mkdir_p!(dest_dir)
@@ -88,7 +88,7 @@ defmodule StreamingServer.UploadController do
   @doc """
   List all uploaded files.
   """
-  def list_uploads(conn, _params) do
+  def list_uploads(conn) do
     files =
       case File.ls(@upload_dir) do
         {:ok, entries} ->

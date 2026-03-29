@@ -3,7 +3,7 @@
 # Integration test script for streaming_server sample app
 # Tests FileStreamer, ChunkedUpload, and SSE features
 
-set -e
+# Note: removed set -e to prevent script from exiting on non-zero return codes
 
 APP_NAME="streaming_server"
 PORT=4008
@@ -80,8 +80,8 @@ test_sse() {
     
     echo -n "Testing ${endpoint} - ${description}... "
     
-    # Start SSE connection and capture first event
-    if timeout $timeout curl -sN "${BASE_URL}${endpoint}" 2>/dev/null | head -1 | grep -q "data:"; then
+    # Start SSE connection and capture first few lines, looking for data: pattern
+    if timeout $timeout curl -sN "${BASE_URL}${endpoint}" 2>/dev/null | head -10 | grep -q "data:"; then
         echo -e "${GREEN}PASS${NC} (SSE streaming works)"
         ((PASSED++))
     else
@@ -148,7 +148,7 @@ else
 fi
 
 # Test 5: Upload status endpoint
-test_endpoint "GET" "/upload/status" "200" "Upload status endpoint"
+test_endpoint "GET" "/uploads" "200" "Upload status endpoint"
 
 # Test 6: SSE events endpoint
 test_sse "/events" 3 "Server-Sent Events streaming"

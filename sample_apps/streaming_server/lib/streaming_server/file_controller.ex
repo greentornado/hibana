@@ -15,14 +15,14 @@ defmodule StreamingServer.FileController do
   @doc """
   Simple file download using FileStreamer.
   """
-  def download(conn, params) do
-    filename = params["filename"]
-    file_path = Path.join(@upload_dir, filename)
+  def download(conn) do
+    filename = conn.params["filename"]
 
-    if File.exists?(file_path) do
-      Hibana.FileStreamer.send_file(conn, file_path,
+    if File.exists?(Path.join(@upload_dir, filename)) do
+      Hibana.FileStreamer.send_file(conn, filename,
         filename: filename,
-        range: false
+        range: false,
+        base_dir: @upload_dir
       )
     else
       conn
@@ -34,15 +34,15 @@ defmodule StreamingServer.FileController do
   @doc """
   Stream file with Range request support (for video seeking, resumable downloads).
   """
-  def stream(conn, params) do
-    filename = params["filename"]
-    file_path = Path.join(@upload_dir, filename)
+  def stream(conn) do
+    filename = conn.params["filename"]
 
-    if File.exists?(file_path) do
-      Hibana.FileStreamer.send_file(conn, file_path,
+    if File.exists?(Path.join(@upload_dir, filename)) do
+      Hibana.FileStreamer.send_file(conn, filename,
         filename: filename,
         # Enable Range request support
-        range: true
+        range: true,
+        base_dir: @upload_dir
       )
     else
       conn
@@ -54,15 +54,15 @@ defmodule StreamingServer.FileController do
   @doc """
   Download with forced content disposition (forces browser download dialog).
   """
-  def download_with_range(conn, params) do
-    filename = params["filename"]
-    file_path = Path.join(@upload_dir, filename)
+  def download_with_range(conn) do
+    filename = conn.params["filename"]
 
-    if File.exists?(file_path) do
-      Hibana.FileStreamer.send_file(conn, file_path,
+    if File.exists?(Path.join(@upload_dir, filename)) do
+      Hibana.FileStreamer.send_file(conn, filename,
         filename: filename,
         range: true,
-        content_type: MIME.from_path(file_path)
+        content_type: MIME.from_path(Path.join(@upload_dir, filename)),
+        base_dir: @upload_dir
       )
     else
       conn

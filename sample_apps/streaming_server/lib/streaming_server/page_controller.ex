@@ -4,7 +4,7 @@ defmodule StreamingServer.PageController do
   """
   use Hibana.Controller
 
-  def index(conn, _params) do
+  def index(conn) do
     json(conn, %{
       app: "StreamingServer",
       description: "File streaming, chunked uploads, and SSE demo",
@@ -43,7 +43,7 @@ defmodule StreamingServer.PageController do
     })
   end
 
-  def features(conn, _params) do
+  def features(conn) do
     json(conn, %{
       features: [
         %{

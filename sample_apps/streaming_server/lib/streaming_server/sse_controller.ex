@@ -13,7 +13,7 @@ defmodule StreamingServer.SSEController do
   @doc """
   SSE endpoint that streams events to the client.
   """
-  def stream_events(conn, _params) do
+  def stream_events(conn) do
     # Get the current process PID
     parent = self()
 
@@ -41,8 +41,8 @@ defmodule StreamingServer.SSEController do
   @doc """
   SSE endpoint for upload progress tracking.
   """
-  def upload_progress(conn, params) do
-    upload_id = params["upload_id"]
+  def upload_progress(conn) do
+    upload_id = conn.params["upload_id"]
     parent = self()
 
     # Spawn background process to simulate upload progress

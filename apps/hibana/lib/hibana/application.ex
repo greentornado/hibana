@@ -46,8 +46,7 @@ defmodule Hibana.Application do
       Hibana.Plugin.Registry,
       {DynamicSupervisor, strategy: :one_for_one, name: Hibana.Plugin.Supervisor},
       Hibana.Queue,
-      Hibana.OTPCache,
-      Hibana.Endpoint
+      Hibana.OTPCache
     ]
 
     opts = [strategy: :one_for_one, name: Hibana.Supervisor]
