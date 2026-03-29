@@ -90,7 +90,10 @@ defmodule Mix.Tasks.Gen.Migration do
 
   defp safe_type(type) do
     atom = String.to_atom(type)
-    if atom in @valid_types, do: atom, else: raise("Unknown field type: #{type}. Valid types: #{inspect(@valid_types)}")
+
+    if atom in @valid_types,
+      do: atom,
+      else: raise("Unknown field type: #{type}. Valid types: #{inspect(@valid_types)}")
   end
 
   @valid_options ~w(null default size precision scale primary_key unique index)a
@@ -106,7 +109,10 @@ defmodule Mix.Tasks.Gen.Migration do
 
   defp safe_option(key) do
     atom = String.to_atom(key)
-    if atom in @valid_options, do: atom, else: raise("Unknown option: #{key}. Valid options: #{inspect(@valid_options)}")
+
+    if atom in @valid_options,
+      do: atom,
+      else: raise("Unknown option: #{key}. Valid options: #{inspect(@valid_options)}")
   end
 
   defp parse_value("true"), do: true

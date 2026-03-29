@@ -4,10 +4,10 @@ if config_env() == :prod do
   config :hibana,
     secret_key_base:
       System.get_env("SECRET_KEY_BASE") ||
-        raise """
+        raise("""
         environment variable SECRET_KEY_BASE is missing.
         You can generate one by calling: mix secret
-        """
+        """)
 
   # JWT authentication
   # config :hibana, :jwt_secret, System.fetch_env!("JWT_SECRET")

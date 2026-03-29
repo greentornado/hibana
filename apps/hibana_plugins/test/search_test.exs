@@ -8,8 +8,13 @@ defmodule Hibana.Plugins.SearchTest do
     original_key = Application.get_env(:hibana_search, :api_key)
 
     on_exit(fn ->
-      if original_url, do: Application.put_env(:hibana_search, :url, original_url), else: Application.delete_env(:hibana_search, :url)
-      if original_key, do: Application.put_env(:hibana_search, :api_key, original_key), else: Application.delete_env(:hibana_search, :api_key)
+      if original_url,
+        do: Application.put_env(:hibana_search, :url, original_url),
+        else: Application.delete_env(:hibana_search, :url)
+
+      if original_key,
+        do: Application.put_env(:hibana_search, :api_key, original_key),
+        else: Application.delete_env(:hibana_search, :api_key)
     end)
 
     :ok

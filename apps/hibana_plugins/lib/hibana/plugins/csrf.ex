@@ -84,7 +84,8 @@ defmodule Hibana.Plugins.CSRF do
       get_token_from_params(conn, field) ||
         get_token_from_header(conn, header)
 
-    if session_token && submitted_token && Plug.Crypto.secure_compare(session_token, submitted_token) do
+    if session_token && submitted_token &&
+         Plug.Crypto.secure_compare(session_token, submitted_token) do
       conn
     else
       conn

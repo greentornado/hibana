@@ -61,7 +61,11 @@ defmodule Hibana.Plugins.SecureHeaders do
 
   defp maybe_put_hsts(conn, %{hsts: false}), do: conn
 
-  defp maybe_put_hsts(conn, %{hsts: true, hsts_max_age: max_age, hsts_include_subdomains: include_sub}) do
+  defp maybe_put_hsts(conn, %{
+         hsts: true,
+         hsts_max_age: max_age,
+         hsts_include_subdomains: include_sub
+       }) do
     value =
       if include_sub do
         "max-age=#{max_age}; includeSubDomains"

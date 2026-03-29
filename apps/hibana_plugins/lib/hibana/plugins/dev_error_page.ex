@@ -171,7 +171,9 @@ defmodule Hibana.Plugins.DevErrorPage do
   defp format_request(conn) do
     headers =
       conn.req_headers
-      |> Enum.map(fn {k, v} -> "<tr><td>#{html_escape(k)}</td><td>#{html_escape(v)}</td></tr>" end)
+      |> Enum.map(fn {k, v} ->
+        "<tr><td>#{html_escape(k)}</td><td>#{html_escape(v)}</td></tr>"
+      end)
       |> Enum.join()
 
     """
