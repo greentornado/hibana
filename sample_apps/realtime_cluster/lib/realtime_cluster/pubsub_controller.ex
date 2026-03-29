@@ -7,7 +7,7 @@ defmodule RealtimeCluster.PubSubController do
   @doc """
   List active PubSub channels.
   """
-  def list_channels(conn, _params) do
+  def list_channels(conn) do
     # In real implementation, track channels in ETS
     channels = [
       %{name: "chat:lobby", subscribers: 0, messages: 0},
@@ -21,9 +21,9 @@ defmodule RealtimeCluster.PubSubController do
   @doc """
   Publish message to a channel (distributed to all nodes).
   """
-  def publish(conn, params) do
-    channel = params["channel"] || "default"
-    message = params["message"] || "Hello from #{node()}"
+  def publish(conn) do
+    channel = conn.body_params["channel"] || "default"
+    message = conn.body_params["message"] || "Hello from #{node()}"
 
     # Publish to all nodes in cluster
     Hibana.Cluster.publish(channel, %{
@@ -43,8 +43,8 @@ defmodule RealtimeCluster.PubSubController do
   @doc """
   Subscribe to channel via SSE (receives messages from all nodes).
   """
-  def subscribe_sse(conn, params) do
-    channel = params["channel"] || "default"
+  def subscribe_sse(conn) do
+    channel = conn.params["channel"] || "default"
 
     # Subscribe to channel
     Hibana.Cluster.subscribe(channel)

@@ -4,7 +4,7 @@ defmodule EnterpriseSuite.EnterpriseController do
   """
   use Hibana.Controller
 
-  def index(conn, _params) do
+  def index(conn) do
     json(conn, %{
       app: "EnterpriseSuite",
       description: "Full enterprise feature demonstration",
@@ -30,7 +30,7 @@ defmodule EnterpriseSuite.EnterpriseController do
     })
   end
 
-  def features(conn, _params) do
+  def features(conn) do
     json(conn, %{
       admin: %{
         description: "Auto-generated CRUD admin dashboard",
@@ -61,7 +61,7 @@ defmodule EnterpriseSuite.EnterpriseController do
     })
   end
 
-  def admin_redirect(conn, _params) do
+  def admin_redirect(conn) do
     redirect(conn, "/admin/dashboard")
   end
 end

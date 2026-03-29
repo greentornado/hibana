@@ -4,7 +4,7 @@ defmodule ResilientServices.ResilienceController do
   """
   use Hibana.Controller
 
-  def index(conn, _params) do
+  def index(conn) do
     json(conn, %{
       app: "ResilientServices",
       description: "CircuitBreaker + PersistentQueue resilience patterns",
@@ -44,7 +44,7 @@ defmodule ResilientServices.ResilienceController do
     })
   end
 
-  def stats(conn, _params) do
+  def stats(conn) do
     # Get circuit breaker status
     circuit_status = Hibana.CircuitBreaker.status(:external_api)
 

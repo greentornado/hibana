@@ -57,6 +57,13 @@ defmodule Hibana.Queue do
   end
 
   def init(_opts) do
+    # Clean up existing table if present (from crash restart)
+    try do
+      :ets.delete(@ets_table)
+    catch
+      _, _ -> :ok
+    end
+
     # Use :protected instead of :public for safety
     # Writes will be routed through GenServer to prevent race conditions
     :ets.new(@ets_table, [
@@ -69,6 +76,19 @@ defmodule Hibana.Queue do
 
     Process.send_after(self(), :process_queue, 1000)
     {:ok, %{}}
+  end
+
+  @doc """
+  Cleanup ETS table on termination to prevent table leak on restart.
+  """
+  def terminate(_reason, _state) do
+    try do
+      :ets.delete(@ets_table)
+    catch
+      _, _ -> :ok
+    end
+
+    :ok
   end
 
   def handle_info(:process_queue, state) do
@@ -129,7 +149,7 @@ defmodule Hibana.Queue do
     case result do
       :ok ->
         :ets.delete(ets_table, job_key)
-        Logger.info("Job completed: \#{inspect(elem(job_key, 0))}")
+        Logger.info("Job completed: #{inspect(elem(job_key, 0))}")
         {:reply, :ok, state}
 
       {:error, _} when retry < max_retries ->
@@ -141,14 +161,50 @@ defmodule Hibana.Queue do
           {3, new_retry}
         ])
 
-        Logger.warning("Job failed, retry \#{new_retry}: \#{inspect(elem(job_key, 0))}")
+        Logger.warning("Job failed, retry #{new_retry}: #{inspect(elem(job_key, 0))}")
         {:reply, :ok, state}
 
       {:error, _} ->
         :ets.delete(ets_table, job_key)
-        Logger.warning("Job failed permanently: \#{inspect(elem(job_key, 0))}")
+        Logger.warning("Job failed permanently: #{inspect(elem(job_key, 0))}")
         {:reply, :ok, state}
     end
+  end
+
+  @doc """
+  Handle enqueue requests via GenServer to ensure thread-safe writes.
+  """
+  def handle_call({:enqueue, module, args, delay, max_retries}, _from, state) do
+    id = generate_id()
+    ready_at = System.system_time(:millisecond) + delay
+
+    :ets.insert(@ets_table, {
+      {module, args, id},
+      System.system_time(:millisecond),
+      0,
+      max_retries,
+      {:available, ready_at}
+    })
+
+    Logger.debug("Job enqueued: #{module} (id: #{id})")
+    {:reply, {:ok, id}, state}
+  end
+
+  @doc """
+  Handle enqueue_at requests via GenServer to ensure thread-safe writes.
+  """
+  def handle_call({:enqueue_at, module, args, at, max_retries}, _from, state) do
+    id = generate_id()
+
+    :ets.insert(@ets_table, {
+      {module, args, id},
+      System.system_time(:millisecond),
+      0,
+      max_retries,
+      {:scheduled, at}
+    })
+
+    {:reply, {:ok, id}, state}
   end
 
   @doc """
@@ -177,22 +233,11 @@ defmodule Hibana.Queue do
       ```
   """
   def enqueue(module, args, opts \\ []) do
-    id = generate_id()
     delay = Keyword.get(opts, :delay, 0)
     max_retries = Keyword.get(opts, :retry, 3)
 
-    ready_at = System.system_time(:millisecond) + delay
-
-    :ets.insert(@ets_table, {
-      {module, args, id},
-      System.system_time(:millisecond),
-      0,
-      max_retries,
-      {:available, ready_at}
-    })
-
-    Logger.debug("Job enqueued: \#{module} (id: \#{id})")
-    {:ok, id}
+    # Route through GenServer to ensure thread-safe writes
+    GenServer.call(__MODULE__, {:enqueue, module, args, delay, max_retries})
   end
 
   @doc """
@@ -221,18 +266,10 @@ defmodule Hibana.Queue do
       ```
   """
   def enqueue_at(module, args, at, opts \\ []) when is_integer(at) do
-    id = generate_id()
     max_retries = Keyword.get(opts, :retry, 3)
 
-    :ets.insert(@ets_table, {
-      {module, args, id},
-      System.system_time(:millisecond),
-      0,
-      max_retries,
-      {:scheduled, at}
-    })
-
-    {:ok, id}
+    # Route through GenServer to ensure thread-safe writes
+    GenServer.call(__MODULE__, {:enqueue_at, module, args, at, max_retries})
   end
 
   @doc """

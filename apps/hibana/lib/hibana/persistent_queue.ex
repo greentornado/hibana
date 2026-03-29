@@ -65,7 +65,8 @@ defmodule Hibana.PersistentQueue do
     :paused,
     :in_flight,
     :workers,
-    :worker_refs
+    :worker_refs,
+    :disk_count
   ]
 
   @doc "Start the persistent queue process with the given options."
@@ -88,8 +89,27 @@ defmodule Hibana.PersistentQueue do
     dets_name = :"#{name}_dets"
     dets_path = Path.join(data_dir, "#{name}.dets") |> String.to_charlist()
 
+    # Clean up existing ETS table if present (from crash restart)
+    try do
+      :ets.delete(ets_name)
+    catch
+      _, _ -> :ok
+    end
+
     ets_table = :ets.new(ets_name, [:ordered_set, :public, read_concurrency: true])
-    {:ok, dets_table} = :dets.open_file(dets_name, file: dets_path, type: :set)
+
+    # Handle DETS open with error checking
+    dets_result = :dets.open_file(dets_name, file: dets_path, type: :set)
+
+    dets_table =
+      case dets_result do
+        {:ok, table} ->
+          table
+
+        {:error, reason} ->
+          Logger.error("Failed to open DETS table: #{inspect(reason)}")
+          raise "DETS open failed: #{inspect(reason)}"
+      end
 
     # Start async recovery to avoid blocking init
     # Recovery happens in a spawned process and sends results back
@@ -113,7 +133,8 @@ defmodule Hibana.PersistentQueue do
       in_flight: 0,
       workers: MapSet.new(),
       # correlation_id -> monitor_ref mapping
-      worker_refs: %{}
+      worker_refs: %{},
+      disk_count: 0
     }
 
     schedule_poll(poll_interval)
@@ -176,9 +197,10 @@ defmodule Hibana.PersistentQueue do
         :ets.insert(state.ets_table, job)
         {:reply, {:ok, id}, state}
 
-      :dets.info(state.dets_table, :size) < state.max_disk_jobs ->
+      state.disk_count < state.max_disk_jobs ->
         :dets.insert(state.dets_table, job)
-        {:reply, {:ok, id}, state}
+        new_disk_count = state.disk_count + 1
+        {:reply, {:ok, id}, %{state | disk_count: new_disk_count}}
 
       true ->
         {:reply, {:error, :queue_full}, state}
@@ -426,6 +448,23 @@ defmodule Hibana.PersistentQueue do
 
   defp generate_id do
     :crypto.strong_rand_bytes(12) |> Base.encode64()
+  end
+
+  @doc """
+  Cleanup ETS and DETS tables on termination.
+  """
+  def terminate(_reason, state) do
+    # Close DETS table
+    if state.dets_table do
+      :dets.close(state.dets_table)
+    end
+
+    # Delete ETS table
+    if state.ets_table do
+      :ets.delete(state.ets_table)
+    end
+
+    :ok
   end
 
   @doc "Return a child specification for use in a supervision tree."

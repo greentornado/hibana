@@ -7,7 +7,7 @@ defmodule RealtimeCluster.ClusterController do
   @doc """
   Landing page with cluster info.
   """
-  def index(conn, _params) do
+  def index(conn) do
     json(conn, %{
       app: "RealtimeCluster",
       description: "Distributed cluster demo with PubSub and SSE",
@@ -49,7 +49,7 @@ defmodule RealtimeCluster.ClusterController do
   @doc """
   List all connected nodes in cluster.
   """
-  def list_nodes(conn, _params) do
+  def list_nodes(conn) do
     current = node()
     connected = Node.list()
 
@@ -64,7 +64,7 @@ defmodule RealtimeCluster.ClusterController do
   @doc """
   Get cluster status and topology.
   """
-  def cluster_status(conn, _params) do
+  def cluster_status(conn) do
     # Get cluster state from Hibana.Cluster
     nodes = [node() | Node.list()]
 
@@ -82,7 +82,7 @@ defmodule RealtimeCluster.ClusterController do
   @doc """
   SSE stream for cluster events (node joins, leaves, messages).
   """
-  def cluster_events(conn, _params) do
+  def cluster_events(conn) do
     # Subscribe to cluster events
     Hibana.Cluster.subscribe("cluster:events")
 
