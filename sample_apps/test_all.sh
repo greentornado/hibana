@@ -3,7 +3,7 @@
 # Master test runner for all sample apps
 # Run individual test scripts or all tests
 
-set -e
+# set -e  # Disabled to continue testing other apps even if one fails
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FAILED=0
