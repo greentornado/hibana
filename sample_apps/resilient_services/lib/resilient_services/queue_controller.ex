@@ -21,7 +21,9 @@ defmodule ResilientServices.QueueController do
     }
 
     # Would enqueue to actual queue
-    json(conn, %{status: "enqueued", job: job}, status: 201)
+    conn
+    |> Plug.Conn.put_status(201)
+    |> json(%{status: "enqueued", job: job})
   end
 
   def stats(conn) do

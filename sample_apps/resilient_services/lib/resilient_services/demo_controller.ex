@@ -38,10 +38,14 @@ defmodule ResilientServices.DemoController do
         json(conn, data)
 
       {:error, :circuit_open} ->
-        json(conn, %{error: "Service unavailable - circuit open"}, status: 503)
+        conn
+        |> Plug.Conn.put_status(503)
+        |> json(%{error: "Service unavailable - circuit open"})
 
       {:error, reason} ->
-        json(conn, %{error: inspect(reason)}, status: 500)
+        conn
+        |> Plug.Conn.put_status(500)
+        |> json(%{error: inspect(reason)})
     end
   end
 

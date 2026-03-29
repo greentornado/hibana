@@ -26,10 +26,14 @@ defmodule ResilientServices.CircuitController do
         json(conn, %{status: "success", data: data})
 
       {:error, :circuit_open} ->
-        json(conn, %{status: "error", message: "Circuit breaker is OPEN"}, status: 503)
+        conn
+        |> Plug.Conn.put_status(503)
+        |> json(%{status: "error", message: "Circuit breaker is OPEN"})
 
       {:error, reason} ->
-        json(conn, %{status: "error", message: inspect(reason)}, status: 500)
+        conn
+        |> Plug.Conn.put_status(500)
+        |> json(%{status: "error", message: inspect(reason)})
     end
   end
 
