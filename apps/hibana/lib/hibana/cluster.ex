@@ -70,6 +70,26 @@ defmodule Hibana.Cluster do
       ```
   """
   def start_link(opts \\ []) do
+    # Validate strategy before starting GenServer so errors can be caught
+    strategy = Keyword.get(opts, :strategy, :epmd)
+
+    case strategy do
+      :epmd ->
+        :ok
+
+      # Falls back to epmd with warning
+      :dns ->
+        :ok
+
+      # Falls back to epmd with warning
+      :gossip ->
+        :ok
+
+      other ->
+        raise ArgumentError,
+              "Unknown cluster strategy: #{inspect(other)}. Supported: :epmd (default). :dns and :gossip fall back to epmd with warnings."
+    end
+
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
@@ -224,7 +244,10 @@ defmodule Hibana.Cluster do
       ```
   """
   def subscribe(topic) do
-    Registry.register(@registry, topic, [])
+    case Registry.register(@registry, topic, []) do
+      {:ok, _} -> :ok
+      {:error, {:already_registered, _}} -> :ok
+    end
   end
 
   @doc """
@@ -273,6 +296,15 @@ defmodule Hibana.Cluster do
     end
 
     :ok
+  end
+
+  @doc """
+  Publishes a message to all subscribers on all connected nodes.
+
+  Alias for `broadcast/2`.
+  """
+  def publish(topic, message) do
+    broadcast(topic, message)
   end
 
   @doc """
