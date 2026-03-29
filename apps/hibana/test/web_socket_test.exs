@@ -134,7 +134,9 @@ defmodule Hibana.WebSocketTest do
         use WebSocket
 
         def init(conn, _opts) do
-          room = conn.params["room"] || "general"
+          # For test connections, use query_string parsing
+          query_params = conn.query_string |> Plug.Conn.Query.decode()
+          room = query_params["room"] || "general"
           {:ok, conn, %{room: room, user: nil}}
         end
 
@@ -332,7 +334,9 @@ defmodule Hibana.WebSocketTest do
         use WebSocket
 
         def init(conn, _opts) do
-          if conn.params["auth"] != "valid" do
+          query_params = conn.query_string |> Plug.Conn.Query.decode()
+
+          if query_params["auth"] != "valid" do
             {:halt, Plug.Conn.send_resp(conn, 403, "Forbidden")}
           else
             {:ok, conn, %{}}
@@ -384,7 +388,8 @@ defmodule Hibana.WebSocketTest do
         use WebSocket
 
         def init(conn, _opts) do
-          room = conn.params["room"] || "general"
+          query_params = conn.query_string |> Plug.Conn.Query.decode()
+          room = query_params["room"] || "general"
           {:ok, conn, %{room: room, users: []}}
         end
 
