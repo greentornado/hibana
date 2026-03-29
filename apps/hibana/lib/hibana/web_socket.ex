@@ -186,7 +186,7 @@ defmodule Hibana.WebSocket do
     conn
     |> put_private(:websocket_handler, handler)
     |> put_private(:websocket_handler_opts, handler_opts)
-    |> upgrade_adapter(
+    |> do_upgrade_adapter(
       :websocket,
       websocket_adapter(conn, handler, handler_opts)
     )
@@ -205,7 +205,7 @@ defmodule Hibana.WebSocket do
   end
 
   # Perform the WebSocket upgrade using Plug.Conn.upgrade_adapter
-  defp upgrade_adapter(conn, type, adapter_tuple) do
+  defp do_upgrade_adapter(conn, type, adapter_tuple) do
     Plug.Conn.upgrade_adapter(conn, type, adapter_tuple)
   end
 end

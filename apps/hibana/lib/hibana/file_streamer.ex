@@ -61,19 +61,24 @@ defmodule Hibana.FileStreamer do
   defp validate_path(path, base_dir) do
     try do
       # Resolve symlinks and get canonical path
+      path_to_resolve = if File.exists?(path), do: path, else: Path.expand(path, base_dir)
+
       resolved_path =
-        if File.exists?(path) do
-          File.real_path!(path)
-        else
-          Path.expand(path, base_dir) |> File.real_path!()
+        case File.real_path(path_to_resolve) do
+          {:ok, resolved} -> resolved
+          {:error, _} -> path_to_resolve
         end
 
-      base_dir_expanded = File.real_path!(base_dir)
+      base_dir_expanded =
+        case File.real_path(base_dir) do
+          {:ok, resolved} -> resolved
+          {:error, _} -> Path.expand(base_dir)
+        end
 
       # Ensure resolved path starts with base directory
       if String.starts_with?(resolved_path, base_dir_expanded) do
         # Additional check: ensure file is not a symlink pointing outside
-        case File.lstat(resolved_path) do
+        case File.lstat(path_to_resolve) do
           {:ok, %{type: :symlink}} -> {:error, "Symlinks not allowed"}
           {:ok, _} -> {:ok, resolved_path}
           {:error, reason} -> {:error, "Cannot access file: #{reason}"}
