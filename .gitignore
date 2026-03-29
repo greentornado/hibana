@@ -35,4 +35,4 @@ priv/queue/
 **/*/cover
 *.md
 .claude
-*.txt
+*.txt*.dets
