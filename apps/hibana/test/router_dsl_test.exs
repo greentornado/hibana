@@ -8,8 +8,8 @@ defmodule Hibana.Router.DSLTest do
       defmodule DSLRouter do
         use Hibana.Router.DSL
 
-        get "/", fn conn -> conn end
-        get "/users/:id", fn conn -> conn end
+        get "/", TestController, :index
+        get "/users/:id", TestController, :show
       end
 
       assert Code.ensure_loaded?(DSLRouter)
@@ -19,7 +19,7 @@ defmodule Hibana.Router.DSLTest do
       defmodule PostRouter do
         use Hibana.Router.DSL
 
-        post "/users", fn conn -> conn end
+        post "/users", TestController, :create
       end
 
       assert Code.ensure_loaded?(PostRouter)
@@ -29,7 +29,7 @@ defmodule Hibana.Router.DSLTest do
       defmodule PutRouter do
         use Hibana.Router.DSL
 
-        put "/users/:id", fn conn -> conn end
+        put "/users/:id", TestController, :update
       end
 
       assert Code.ensure_loaded?(PutRouter)
@@ -39,7 +39,7 @@ defmodule Hibana.Router.DSLTest do
       defmodule DeleteRouter do
         use Hibana.Router.DSL
 
-        delete "/users/:id", fn conn -> conn end
+        delete "/users/:id", TestController, :delete
       end
 
       assert Code.ensure_loaded?(DeleteRouter)
@@ -49,7 +49,7 @@ defmodule Hibana.Router.DSLTest do
       defmodule PatchRouter do
         use Hibana.Router.DSL
 
-        patch "/users/:id", fn conn -> conn end
+        patch "/users/:id", TestController, :patch
       end
 
       assert Code.ensure_loaded?(PatchRouter)
@@ -59,7 +59,7 @@ defmodule Hibana.Router.DSLTest do
       defmodule OptionsRouter do
         use Hibana.Router.DSL
 
-        options "/", fn conn -> conn end
+        options "/", TestController, :options
       end
 
       assert Code.ensure_loaded?(OptionsRouter)
@@ -69,7 +69,7 @@ defmodule Hibana.Router.DSLTest do
       defmodule HeadRouter do
         use Hibana.Router.DSL
 
-        head "/", fn conn -> conn end
+        head "/", TestController, :head
       end
 
       assert Code.ensure_loaded?(HeadRouter)
@@ -81,29 +81,10 @@ defmodule Hibana.Router.DSLTest do
       defmodule DynamicRouter do
         use Hibana.Router.DSL
 
-        get "/users/:id/posts/:slug", fn conn ->
-          # In real usage, conn.params would be populated
-          conn
-        end
+        get "/users/:id/posts/:slug", TestController, :show
       end
 
       assert Code.ensure_loaded?(DynamicRouter)
-    end
-  end
-
-  describe "inline handlers" do
-    test "supports inline function handlers" do
-      defmodule InlineRouter do
-        use Hibana.Router.DSL
-
-        get "/inline", fn conn ->
-          conn
-          |> Plug.Conn.put_resp_content_type("text/plain")
-          |> Plug.Conn.send_resp(200, "OK")
-        end
-      end
-
-      assert Code.ensure_loaded?(InlineRouter)
     end
   end
 
@@ -128,7 +109,7 @@ defmodule Hibana.Router.DSLTest do
         plug Hibana.Plugins.Logger
         plug Hibana.Plugins.BodyParser
 
-        get "/", fn conn -> conn end
+        get "/", TestController, :index
       end
 
       assert Code.ensure_loaded?(PlugRouter)
