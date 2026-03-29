@@ -158,7 +158,7 @@ defmodule Hibana.EventStore do
               require Logger
 
               Logger.error(
-                "[EventStore] Projection #{name} failed for event #{event.id}: #{inspect(e)}"
+                "[EventStore] Projection #{name} failed for event seq #{event.sequence}: #{inspect(e)}"
               )
 
               # Keep projection in its current state, don't crash
