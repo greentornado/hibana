@@ -169,14 +169,10 @@ defmodule Hibana.CircuitBreaker do
   end
 
   defp should_try_half_open?(name) do
-    case :ets.lookup(name, :state) do
-      [{:state, :open, _, last_failure}] when is_integer(last_failure) ->
-        now = System.monotonic_time(:millisecond)
-        timeout = :ets.lookup_element(name, :config, 2)
-        now - last_failure > timeout
-
-      _ ->
-        false
+    # Query GenServer for consistent state instead of ETS
+    case GenServer.call(name, :check_timeout) do
+      {:can_retry, true} -> true
+      _ -> false
     end
   end
 
@@ -224,6 +220,12 @@ defmodule Hibana.CircuitBreaker do
   """
   def reset(name) do
     GenServer.call(name, :reset)
+  end
+
+  def handle_call(:check_timeout, _from, state) do
+    # Check if timeout has elapsed without transitioning state
+    can_retry = state.state == :open and time_elapsed?(state.last_failure, state.timeout)
+    {:reply, {:can_retry, can_retry}, state}
   end
 
   def handle_call(:get_state, _from, state) do

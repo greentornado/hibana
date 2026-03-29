@@ -52,8 +52,8 @@ defmodule Hibana.Job do
       {:reply, :ok, state}
     end
 
-    def enqueue(worker_module, args) do
-      GenServer.call(__MODULE__, {:enqueue, worker_module, args})
+    def enqueue(worker_module, args, server \\ __MODULE__) do
+      GenServer.call(server, {:enqueue, worker_module, args})
     end
   end
 

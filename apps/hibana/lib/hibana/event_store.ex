@@ -146,12 +146,24 @@ defmodule Hibana.EventStore do
         {stored_event, %{acc | sequence: seq}}
       end)
 
-    # Update projections
+    # Update projections with error isolation
     new_projections =
       Enum.reduce(stored_events, new_state.projections, fn event, projs ->
         Enum.reduce(projs, projs, fn {name, {reducer, current_state}}, acc ->
-          new_proj_state = reducer.(event, current_state)
-          Map.put(acc, name, {reducer, new_proj_state})
+          try do
+            new_proj_state = reducer.(event, current_state)
+            Map.put(acc, name, {reducer, new_proj_state})
+          rescue
+            e ->
+              require Logger
+
+              Logger.error(
+                "[EventStore] Projection #{name} failed for event #{event.id}: #{inspect(e)}"
+              )
+
+              # Keep projection in its current state, don't crash
+              acc
+          end
         end)
       end)
 

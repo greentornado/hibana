@@ -8,9 +8,10 @@ defmodule Hibana.Pipeline do
 
   ## Features
 
-  - Named pipelines with `pipeline/2` macro
-  - Scoped routes with `scope/3` macro
-  - Per-scope pipeline assignment
+  - Named pipelines with `pipeline/2` macro - **Fully implemented**
+  - Scoped routes with `scope/3` macro - **Partially implemented**
+    ⚠️ Scope path prefix and pipeline application are not yet functional.
+    Routes defined inside scopes work but don't get the scope prefix or pipeline.
   - Works with `Hibana.CompiledRouter`
 
   ## Usage
@@ -22,33 +23,18 @@ defmodule Hibana.Pipeline do
         # Global plugs
         plug Hibana.Plugins.Logger
 
-        # API routes with auth
+        # Named pipelines work correctly
         pipeline :api do
           plug Hibana.Plugins.JWT, secret: "secret"
           plug Hibana.Plugins.RateLimiter
         end
 
-        # Public routes
-        pipeline :public do
-          plug Hibana.Plugins.CORS
-        end
-
-        scope "/api", pipeline: :api do
-          get "/users", UserController, :index
-          post "/users", UserController, :create
-        end
-
-        scope "/", pipeline: :public do
-          get "/health", HealthController, :index
-        end
+        # Apply pipeline directly to routes (recommended)
+        # Note: scope/3 macro exists but scope features are limited
+        get "/api/users", UserController, :index
+        post "/api/users", UserController, :create
+        plug Hibana.Plugins.JWT, secret: "secret"  # Apply per-route
       end
-
-  ## Macros
-
-  | Macro | Description |
-  |-------|-------------|
-  | `pipeline/2` | Define a named group of plugs |
-  | `scope/3` | Group routes under a path prefix with a pipeline |
   """
 
   defmacro __using__(_opts) do
@@ -84,6 +70,14 @@ defmodule Hibana.Pipeline do
 
   defmacro scope(prefix, opts, do: block) do
     quote do
+      require Logger
+
+      Logger.warning(
+        "[Pipeline] scope/3 macro is limited: path prefix and pipeline assignment " <>
+          "are not yet fully implemented. Routes inside scopes work but won't get " <>
+          "the scope prefix or pipeline applied."
+      )
+
       @current_scope %{prefix: unquote(prefix), pipeline: unquote(opts[:pipeline])}
       unquote(block)
       @current_scope nil

@@ -99,7 +99,7 @@ defmodule Hibana.WebSocket.BanditAdapter do
 
   # Handle ping frames - respond with pong for keepalive
   def handle_in({:ping, data}, state) do
-    {[{:pong, data}], state}
+    {:reply, {:pong, data}, state}
   end
 
   # Handle pong frames - just acknowledge

@@ -247,33 +247,92 @@ defmodule Hibana.SSE do
   def stream_loop(conn, opts \\ []) do
     keep_alive = Keyword.get(opts, :keep_alive, 15_000)
     timeout = Keyword.get(opts, :timeout, :infinity)
+    max_events = Keyword.get(opts, :max_events, 10_000)
+    max_duration = Keyword.get(opts, :max_duration, 300_000)
 
-    do_stream_loop(conn, keep_alive, timeout)
+    start_time = System.monotonic_time(:millisecond)
+    do_stream_loop(conn, keep_alive, timeout, max_events, max_duration, start_time, 0)
   end
 
-  defp do_stream_loop(conn, keep_alive, timeout) do
-    effective_timeout = min(keep_alive, timeout || keep_alive)
+  defp do_stream_loop(
+         conn,
+         keep_alive,
+         timeout,
+         max_events,
+         max_duration,
+         start_time,
+         event_count
+       ) do
+    require Logger
 
-    receive do
-      {:sse_event, event_type, data} ->
-        case send_event(conn, event_type, data) do
-          {:ok, conn} -> do_stream_loop(conn, keep_alive, timeout)
-          {:error, _} -> conn
-        end
-
-      {:sse_event, event_type, data, opts} ->
-        case send_event(conn, event_type, data, opts) do
-          {:ok, conn} -> do_stream_loop(conn, keep_alive, timeout)
-          {:error, _} -> conn
-        end
-
-      :sse_close ->
+    # Check max events limit
+    cond do
+      event_count >= max_events ->
+        Logger.warning("[SSE] Max events (#{max_events}) reached, closing stream")
         conn
-    after
-      effective_timeout ->
-        case send_comment(conn) do
-          {:ok, conn} -> do_stream_loop(conn, keep_alive, timeout)
-          {:error, _} -> conn
+
+      # Check max duration limit
+      System.monotonic_time(:millisecond) - start_time >= max_duration ->
+        Logger.warning("[SSE] Max duration (#{max_duration}ms) reached, closing stream")
+        conn
+
+      true ->
+        effective_timeout = min(keep_alive, timeout || keep_alive)
+
+        receive do
+          {:sse_event, event_type, data} ->
+            case send_event(conn, event_type, data) do
+              {:ok, conn} ->
+                do_stream_loop(
+                  conn,
+                  keep_alive,
+                  timeout,
+                  max_events,
+                  max_duration,
+                  start_time,
+                  event_count + 1
+                )
+
+              {:error, _} ->
+                conn
+            end
+
+          {:sse_event, event_type, data, opts} ->
+            case send_event(conn, event_type, data, opts) do
+              {:ok, conn} ->
+                do_stream_loop(
+                  conn,
+                  keep_alive,
+                  timeout,
+                  max_events,
+                  max_duration,
+                  start_time,
+                  event_count + 1
+                )
+
+              {:error, _} ->
+                conn
+            end
+
+          :sse_close ->
+            conn
+        after
+          effective_timeout ->
+            case send_comment(conn) do
+              {:ok, conn} ->
+                do_stream_loop(
+                  conn,
+                  keep_alive,
+                  timeout,
+                  max_events,
+                  max_duration,
+                  start_time,
+                  event_count
+                )
+
+              {:error, _} ->
+                conn
+            end
         end
     end
   end

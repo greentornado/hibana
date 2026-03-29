@@ -53,10 +53,12 @@ defmodule Hibana.Queue do
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, [], name: name)
+    GenServer.start_link(__MODULE__, name: name, name: name)
   end
 
-  def init(_opts) do
+  def init(opts) do
+    server_name = Keyword.get(opts, :name, __MODULE__)
+
     # Clean up existing table if present (from crash restart)
     try do
       :ets.delete(@ets_table)
@@ -75,7 +77,7 @@ defmodule Hibana.Queue do
     ])
 
     Process.send_after(self(), :process_queue, 1000)
-    {:ok, %{}}
+    {:ok, %{name: server_name}}
   end
 
   @doc """
@@ -92,12 +94,12 @@ defmodule Hibana.Queue do
   end
 
   def handle_info(:process_queue, state) do
-    process_jobs()
+    process_jobs(state.name)
     Process.send_after(self(), :process_queue, 1000)
     {:noreply, state}
   end
 
-  defp process_jobs do
+  defp process_jobs(server_name) do
     now = System.system_time(:millisecond)
 
     # First, promote scheduled jobs that are ready
@@ -116,15 +118,17 @@ defmodule Hibana.Queue do
         {{{:_, :_, :_}, :_, :_, :_, {:available, :"$1"}}, [{:"=<", :"$1", now}], [:"$_"]}
       ])
 
-    Enum.each(available, fn job -> execute_job(job) end)
+    Enum.each(available, fn job -> execute_job(job, server_name) end)
   end
 
-  defp execute_job({{mod, args, id}, _inserted_at, retry, max_retries, _status}) do
+  defp execute_job({{mod, args, id}, _inserted_at, retry, max_retries, _status}, server_name) do
     # Spawn supervised task via GenServer call to ensure proper cleanup
-    GenServer.cast(__MODULE__, {:execute_job, mod, args, id, retry, max_retries})
+    GenServer.cast(server_name, {:execute_job, mod, args, id, retry, max_retries})
   end
 
   def handle_cast({:execute_job, mod, args, id, retry, max_retries}, state) do
+    server_name = state.name
+
     Task.start(fn ->
       result =
         try do
@@ -137,7 +141,7 @@ defmodule Hibana.Queue do
         end
 
       # Send result back to GenServer for stateful operations
-      GenServer.call(__MODULE__, {:job_complete, {mod, args, id}, result, retry, max_retries})
+      GenServer.call(server_name, {:job_complete, {mod, args, id}, result, retry, max_retries})
     end)
 
     {:noreply, state}
@@ -232,12 +236,12 @@ defmodule Hibana.Queue do
       {:ok, id} = Hibana.Queue.enqueue(SendEmailJob, %{to: "user@example.com"}, delay: 5000, retry: 5)
       ```
   """
-  def enqueue(module, args, opts \\ []) do
+  def enqueue(module, args, opts \\ [], server \\ __MODULE__) do
     delay = Keyword.get(opts, :delay, 0)
     max_retries = Keyword.get(opts, :retry, 3)
 
     # Route through GenServer to ensure thread-safe writes
-    GenServer.call(__MODULE__, {:enqueue, module, args, delay, max_retries})
+    GenServer.call(server, {:enqueue, module, args, delay, max_retries})
   end
 
   @doc """
@@ -265,11 +269,11 @@ defmodule Hibana.Queue do
       {:ok, id} = Hibana.Queue.enqueue_at(MyJob, %{data: "value"}, future)
       ```
   """
-  def enqueue_at(module, args, at, opts \\ []) when is_integer(at) do
+  def enqueue_at(module, args, at, opts \\ [], server \\ __MODULE__) when is_integer(at) do
     max_retries = Keyword.get(opts, :retry, 3)
 
     # Route through GenServer to ensure thread-safe writes
-    GenServer.call(__MODULE__, {:enqueue_at, module, args, at, max_retries})
+    GenServer.call(server, {:enqueue_at, module, args, at, max_retries})
   end
 
   @doc """

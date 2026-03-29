@@ -50,7 +50,8 @@ defmodule Hibana.Cluster do
   ## Parameters
 
     - `opts` - Keyword list of options:
-      - `:strategy` - Node discovery strategy: `:epmd`, `:dns`, or `:gossip` (default: `:epmd`)
+      - `:strategy` - Node discovery strategy. Only `:epmd` is fully implemented. 
+        `:dns` and `:gossip` fall back to `:epmd` behavior with warnings (default: `:epmd`)
       - `:hosts` - List of node names to connect to for `:epmd` strategy (default: `[]`)
       - `:heartbeat_interval` - Interval in ms between reconnection attempts (default: `5_000`)
 
@@ -61,7 +62,10 @@ defmodule Hibana.Cluster do
   ## Examples
 
       ```elixir
+      # Fully supported
       Hibana.Cluster.start_link(strategy: :epmd, hosts: [:"app@node1", :"app@node2"])
+      
+      # Not yet implemented - falls back to epmd with warning
       Hibana.Cluster.start_link(strategy: :gossip, port: 45892)
       ```
   """
@@ -122,7 +126,8 @@ defmodule Hibana.Cluster do
           }
 
         other ->
-          raise ArgumentError, "Unknown cluster strategy: #{inspect(other)}. Supported: :epmd"
+          raise ArgumentError,
+                "Unknown cluster strategy: #{inspect(other)}. Supported: :epmd (default). :dns and :gossip fall back to epmd with warnings."
       end
 
     # Connect to known hosts

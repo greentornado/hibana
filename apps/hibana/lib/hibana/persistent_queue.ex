@@ -335,7 +335,9 @@ defmodule Hibana.PersistentQueue do
       state.ets_table
     )
 
+    # Close DETS and cleanup ETS
     :dets.close(state.dets_table)
+    :ets.delete(state.ets_table)
     :ok
   end
 
@@ -448,23 +450,6 @@ defmodule Hibana.PersistentQueue do
 
   defp generate_id do
     :crypto.strong_rand_bytes(12) |> Base.encode64()
-  end
-
-  @doc """
-  Cleanup ETS and DETS tables on termination.
-  """
-  def terminate(_reason, state) do
-    # Close DETS table
-    if state.dets_table do
-      :dets.close(state.dets_table)
-    end
-
-    # Delete ETS table
-    if state.ets_table do
-      :ets.delete(state.ets_table)
-    end
-
-    :ok
   end
 
   @doc "Return a child specification for use in a supervision tree."

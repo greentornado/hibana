@@ -127,7 +127,7 @@ defmodule Hibana.WebSocket.BanditAdapterTest do
 
     test "responds to ping with pong", %{state: state} do
       result = BanditAdapter.handle_in({:ping, <<>>}, state)
-      assert {[{:pong, <<>>}], ^state} = result
+      assert {:reply, {:pong, <<>>}, ^state} = result
     end
 
     test "handles pong silently", %{state: state} do
