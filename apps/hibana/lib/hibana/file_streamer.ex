@@ -46,15 +46,45 @@ defmodule Hibana.FileStreamer do
     base_dir = Keyword.get(opts, :base_dir, "priv/static")
 
     # Resolve and validate path to prevent path traversal
-    resolved_path = Path.expand(path, base_dir)
-    base_dir_expanded = Path.expand(base_dir)
+    # Use real_path to resolve symlinks and ensure path is within base_dir
+    case validate_path(path, base_dir) do
+      {:ok, resolved_path} ->
+        do_send_file(conn, resolved_path, opts)
 
-    if String.starts_with?(resolved_path, base_dir_expanded) do
-      do_send_file(conn, resolved_path, opts)
-    else
-      conn
-      |> put_resp_content_type("text/plain")
-      |> send_resp(403, "Forbidden: Invalid file path")
+      {:error, reason} ->
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(403, "Forbidden: #{reason}")
+    end
+  end
+
+  defp validate_path(path, base_dir) do
+    try do
+      # Resolve symlinks and get canonical path
+      resolved_path =
+        if File.exists?(path) do
+          File.real_path!(path)
+        else
+          Path.expand(path, base_dir) |> File.real_path!()
+        end
+
+      base_dir_expanded = File.real_path!(base_dir)
+
+      # Ensure resolved path starts with base directory
+      if String.starts_with?(resolved_path, base_dir_expanded) do
+        # Additional check: ensure file is not a symlink pointing outside
+        case File.lstat(resolved_path) do
+          {:ok, %{type: :symlink}} -> {:error, "Symlinks not allowed"}
+          {:ok, _} -> {:ok, resolved_path}
+          {:error, reason} -> {:error, "Cannot access file: #{reason}"}
+        end
+      else
+        {:error, "Path escapes base directory"}
+      end
+    rescue
+      _ -> {:error, "Invalid file path"}
+    catch
+      _, _ -> {:error, "Invalid file path"}
     end
   end
 
@@ -181,8 +211,11 @@ defmodule Hibana.FileStreamer do
   # --- Helpers ---
 
   defp generate_etag(path, size, mtime) do
-    hash = :erlang.phash2({path, size, mtime})
-    "\"#{Integer.to_string(hash, 16)}\""
+    # Use SHA256 for collision-resistant ETag generation
+    content = "#{path}:#{size}:#{inspect(mtime)}"
+    hash = :crypto.hash(:sha256, content) |> Base.encode16(case: :lower)
+    # Return first 16 chars of hash for reasonable ETag length
+    "\"#{String.slice(hash, 0, 16)}\""
   end
 
   defp etag_match?(conn, etag) do

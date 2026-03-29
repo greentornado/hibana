@@ -162,11 +162,37 @@ defmodule Hibana.Router do
   defp do_match(_, _, _), do: :nomatch
 
   defp invoke_handler(conn, handler, action, _verb) when is_atom(handler) do
-    apply(handler, action, [conn])
+    try do
+      apply(handler, action, [conn])
+    rescue
+      error ->
+        require Logger
+        Logger.error("Controller error in #{inspect(handler)}.#{action}: #{inspect(error)}")
+
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(
+          500,
+          Jason.encode!(%{error: "Internal Server Error", message: "Controller execution failed"})
+        )
+    end
   end
 
   defp invoke_handler(conn, handler, _action, _verb) when is_function(handler) do
-    handler.(conn)
+    try do
+      handler.(conn)
+    rescue
+      error ->
+        require Logger
+        Logger.error("Handler function error: #{inspect(error)}")
+
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(
+          500,
+          Jason.encode!(%{error: "Internal Server Error", message: "Handler execution failed"})
+        )
+    end
   end
 
   defp send_404(conn) do

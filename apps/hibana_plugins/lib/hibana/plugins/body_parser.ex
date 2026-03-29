@@ -68,8 +68,22 @@ defmodule Hibana.Plugins.BodyParser do
     end
   end
 
-  defp parse_json(conn, decoder) do
-    case read_body(conn) do
+  # 8MB default limit
+  @default_max_body_size 8_388_608
+
+  defp read_body_with_limit(conn, opts \\ []) do
+    max_size = Keyword.get(opts, :max_body_size, @default_max_body_size)
+    read_length = Keyword.get(opts, :read_length, 64_000)
+
+    case Plug.Conn.read_body(conn, length: max_size, read_length: read_length) do
+      {:ok, body, conn} -> {:ok, body, conn}
+      {:more, _data, conn} -> {:error, :body_too_large, conn}
+      {:error, reason} -> {:error, reason, conn}
+    end
+  end
+
+  defp parse_json(conn, decoder, opts \\ []) do
+    case read_body_with_limit(conn, opts) do
       {:ok, body, conn} ->
         case decoder.decode(body) do
           {:ok, parsed} ->
@@ -79,13 +93,13 @@ defmodule Hibana.Plugins.BodyParser do
             conn
         end
 
-      {:more, _partial, conn} ->
+      {:error, _reason, conn} ->
         conn
     end
   end
 
-  defp parse_urlencoded(conn) do
-    case read_body(conn) do
+  defp parse_urlencoded(conn, opts \\ []) do
+    case read_body_with_limit(conn, opts) do
       {:ok, body, conn} ->
         params = URI.decode_query(body)
         %{conn | body_params: Map.new(params)}

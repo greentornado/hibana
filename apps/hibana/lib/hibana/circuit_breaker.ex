@@ -122,13 +122,9 @@ defmodule Hibana.CircuitBreaker do
       ```
   """
   def call(name, fun) do
-    # Fast path: read state from ETS instead of GenServer call
-    circuit_state =
-      case :ets.lookup(name, :state) do
-        [{:state, state, _, _}] -> state
-        # Default to closed if not found
-        [] -> :closed
-      end
+    # Get current state from GenServer to ensure consistency
+    # (Removed ETS fast-path to prevent state divergence)
+    circuit_state = GenServer.call(name, :get_state)
 
     case circuit_state do
       :closed ->
@@ -228,6 +224,11 @@ defmodule Hibana.CircuitBreaker do
   """
   def reset(name) do
     GenServer.call(name, :reset)
+  end
+
+  def handle_call(:get_state, _from, state) do
+    # Simple state getter for the call/2 function
+    {:reply, state.state, state}
   end
 
   def handle_call(:check_state, _from, state) do
@@ -350,6 +351,19 @@ defmodule Hibana.CircuitBreaker do
 
   defp time_elapsed?(last, timeout) do
     System.monotonic_time(:millisecond) - last >= timeout
+  end
+
+  @doc """
+  Cleanup ETS table on termination.
+  """
+  def terminate(_reason, state) do
+    try do
+      :ets.delete(state.name)
+    catch
+      _, _ -> :ok
+    end
+
+    :ok
   end
 
   def child_spec(opts) do

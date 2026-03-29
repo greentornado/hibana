@@ -203,4 +203,9 @@ defmodule Hibana.WebSocket do
       {Hibana.WebSocket.CowboyAdapter, {handler, handler_opts}, %{idle_timeout: 60_000}}
     end
   end
+
+  # Perform the WebSocket upgrade using Plug.Conn.upgrade_adapter
+  defp upgrade_adapter(conn, type, adapter_tuple) do
+    Plug.Conn.upgrade_adapter(conn, type, adapter_tuple)
+  end
 end

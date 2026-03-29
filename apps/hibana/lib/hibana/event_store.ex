@@ -95,6 +95,14 @@ defmodule Hibana.EventStore do
   def init(opts) do
     table_name = Keyword.get(opts, :table_name, :hibana_event_store)
 
+    # Clean up existing tables if present (from crash restart)
+    try do
+      :ets.delete(table_name)
+      :ets.delete(:"#{table_name}_aggregates")
+    catch
+      _, _ -> :ok
+    end
+
     events_table =
       :ets.new(table_name, [:ordered_set, :protected])
 
@@ -251,5 +259,19 @@ defmodule Hibana.EventStore do
       |> String.replace("\\*", ".*")
 
     Regex.compile!("^#{regex_pattern}$")
+  end
+
+  @doc """
+  Cleanup ETS tables on termination.
+  """
+  def terminate(_reason, state) do
+    try do
+      :ets.delete(state.events_table)
+      :ets.delete(state.aggregates_table)
+    catch
+      _, _ -> :ok
+    end
+
+    :ok
   end
 end
