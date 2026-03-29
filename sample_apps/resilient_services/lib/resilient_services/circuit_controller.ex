@@ -6,10 +6,10 @@ defmodule ResilientServices.CircuitController do
 
   def status(conn) do
     status = Hibana.CircuitBreaker.status(:external_api)
-    json(conn, status)
+    json(conn, %{circuit_breakers: [status]})
   end
 
-  def call(conn) do
+  def call_api(conn) do
     # Simulate external API call through circuit breaker
     result =
       Hibana.CircuitBreaker.call(:external_api, fn ->
@@ -37,13 +37,29 @@ defmodule ResilientServices.CircuitController do
     end
   end
 
-  def trip(conn) do
-    # Manually trip the circuit
-    Hibana.CircuitBreaker.open(:external_api)
-    json(conn, %{status: "tripped", message: "Circuit breaker manually opened"})
+  def trip_circuit(conn) do
+    # Trip the circuit by making multiple failing calls
+    # The circuit breaker will transition to open after threshold failures
+    threshold = 5
+
+    # Simulate failures to trip the circuit
+    for _ <- 1..threshold do
+      Hibana.CircuitBreaker.call(:external_api, fn ->
+        {:error, :simulated_failure}
+      end)
+    end
+
+    # Get the current status after failures
+    status = Hibana.CircuitBreaker.status(:external_api)
+
+    json(conn, %{
+      status: "tripped",
+      message: "Circuit breaker manually opened",
+      circuit_state: status.state
+    })
   end
 
-  def reset(conn) do
+  def reset_circuit(conn) do
     # Reset the circuit
     Hibana.CircuitBreaker.reset(:external_api)
     json(conn, %{status: "reset", message: "Circuit breaker reset to closed"})

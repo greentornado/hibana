@@ -3,8 +3,6 @@
 # Integration test script for resilient_services sample app
 # Tests CircuitBreaker and PersistentQueue features
 
-set -e
-
 APP_NAME="resilient_services"
 PORT=4010
 BASE_URL="http://localhost:${PORT}"
@@ -50,23 +48,26 @@ test_endpoint() {
 
 # Function to test JSON response contains field
 test_json_field() {
-    local endpoint=$1
-    local field=$2
-    local description=$3
+    local method=$1
+    local endpoint=$2
+    local field=$3
+    local description=$4
+    local data=$5
     
-    echo -n "Testing ${endpoint} - ${description}... "
+    echo -n "Testing ${method} ${endpoint} - ${description}... "
     
-    if response=$(curl -s "${BASE_URL}${endpoint}" 2>/dev/null); then
-        if echo "$response" | grep -q "\"${field}\""; then
-            echo -e "${GREEN}PASS${NC} (Field '${field}' found)"
-            ((PASSED++))
-        else
-            echo -e "${RED}FAIL${NC} (Field '${field}' not found)"
-            echo "  Response: ${response}"
-            ((FAILED++))
-        fi
+    if [ -n "$data" ]; then
+        response=$(curl -s -X "${method}" -H "Content-Type: application/json" -d "${data}" "${BASE_URL}${endpoint}" 2>/dev/null)
     else
-        echo -e "${RED}FAIL${NC} (Connection error)"
+        response=$(curl -s -X "${method}" "${BASE_URL}${endpoint}" 2>/dev/null)
+    fi
+    
+    if echo "$response" | grep -q "\"${field}\""; then
+        echo -e "${GREEN}PASS${NC} (Field '${field}' found)"
+        ((PASSED++))
+    else
+        echo -e "${RED}FAIL${NC} (Field '${field}' not found)"
+        echo "  Response: ${response}"
         ((FAILED++))
     fi
 }
@@ -106,18 +107,24 @@ echo ""
 # Test 1: Root endpoint (resilience overview)
 test_endpoint "GET" "/" "200" "Resilience overview page"
 
-# Test 2: CircuitBreaker status
-test_json_field "/circuit_breaker/status" "circuit_breakers" "List circuit breakers"
+# Test 2: Resilience stats endpoint
+test_json_field "GET" "/resilience/stats" "circuit_breaker" "Resilience stats with circuit_breaker field"
 
-# Test 3: Queue stats
-test_json_field "/queue/stats" "queue" "Queue statistics"
+# Test 3: Circuit status endpoint
+test_json_field "GET" "/circuit/status" "circuit_breakers" "List circuit breakers"
 
-# Test 4: Health check endpoint
-test_json_field "/health" "status" "Health check endpoint"
+# Test 4: Queue stats endpoint
+test_json_field "GET" "/jobs/stats" "queue" "Queue statistics"
 
-# Test 5: Test circuit breaker call (simulated external API)
-echo -n "Testing /circuit_breaker/test-api - Circuit breaker call... "
-response=$(curl -s "${BASE_URL}/circuit_breaker/test-api" 2>/dev/null)
+# Test 5: List jobs endpoint
+test_json_field "GET" "/jobs" "jobs" "List jobs endpoint"
+
+# Test 6: Submit job to queue
+test_json_field "POST" "/jobs" "job_id" "Submit job to queue" '{"task":"test_job","data":"test"}'
+
+# Test 7: Call circuit breaker API (simulated)
+echo -n "Testing POST /circuit/call - Circuit breaker call... "
+response=$(curl -s -X POST "${BASE_URL}/circuit/call" 2>/dev/null)
 if echo "$response" | grep -q "\"status\"\|\"success\"\|\"error\""; then
     echo -e "${GREEN}PASS${NC} (Circuit breaker responds)"
     ((PASSED++))
@@ -127,54 +134,20 @@ else
     ((PASSED++))  # Don't fail, might be circuit open
 fi
 
-# Test 6: Queue enqueue job
-echo -n "Testing POST /queue/enqueue - Enqueue job... "
-if response=$(curl -s -w "\n%{http_code}" -X POST \
-    -H "Content-Type: application/json" \
-    -d '{"task":"test_job","data":"test"}' \
-    "${BASE_URL}/queue/enqueue" 2>/dev/null); then
-    http_code=$(echo "$response" | tail -n1)
-    if [ "$http_code" = "200" ]; then
-        echo -e "${GREEN}PASS${NC} (Job enqueued)"
-        ((PASSED++))
-    else
-        echo -e "${RED}FAIL${NC} (HTTP ${http_code})"
-        ((FAILED++))
-    fi
-else
-    echo -e "${RED}FAIL${NC} (Connection error)"
-    ((FAILED++))
-fi
+# Test 8: Trip circuit breaker
+test_json_field "POST" "/circuit/trip" "status" "Trip circuit breaker"
 
-# Test 7: Queue dequeue job
-test_json_field "/queue/dequeue" "job" "Dequeue job from queue"
+# Test 9: Reset circuit breaker
+test_json_field "POST" "/circuit/reset" "status" "Reset circuit breaker"
 
-# Test 8: Queue clear
-test_json_field "/queue/clear" "status" "Clear queue endpoint"
+# Test 10: Process jobs
+test_json_field "POST" "/jobs/process" "processed" "Process jobs from queue"
 
-# Test 9: Demo external service with circuit breaker
-echo -n "Testing /demo/external-api - External service demo... "
-response=$(curl -s "${BASE_URL}/demo/external-api" 2>/dev/null)
-if echo "$response" | grep -q "\"status\"\|\"data\"\|\"error\""; then
-    echo -e "${GREEN}PASS${NC} (External API responds)"
-    ((PASSED++))
-else
-    echo -e "${YELLOW}WARN${NC} (Response unclear)"
-    echo "  Response: ${response}"
-    ((PASSED++))
-fi
+# Test 11: Demo failure simulation
+test_json_field "GET" "/demo/failure" "status" "Demo failure simulation"
 
-# Test 10: Demo queue processing
-echo -n "Testing /demo/queue-processing - Queue processing demo... "
-response=$(curl -s "${BASE_URL}/demo/queue-processing" 2>/dev/null)
-if echo "$response" | grep -q "\"jobs\"\|\"processed\"\|\"pending\""; then
-    echo -e "${GREEN}PASS${NC} (Queue demo responds)"
-    ((PASSED++))
-else
-    echo -e "${YELLOW}WARN${NC} (Response unclear)"
-    echo "  Response: ${response}"
-    ((PASSED++))
-fi
+# Test 12: Demo recovery simulation
+test_json_field "GET" "/demo/recovery" "status" "Demo recovery simulation"
 
 echo ""
 echo "===================================="

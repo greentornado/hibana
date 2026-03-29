@@ -29,7 +29,11 @@ defmodule RoutingBenchmark.BenchmarkController do
           path: "/api/v:version/item/:id",
           description: "API routes (v1-v2, 1-50)"
         },
-        %{method: "GET", path: "/test/route/:id", description: "Test routes (1-100)"}
+        %{
+          method: "GET",
+          path: "/files/:category/:id",
+          description: "File routes (docs/images/videos/audio/data)"
+        }
       ],
       features: [
         "CompiledRouter generates O(1) pattern-matching functions",
@@ -48,12 +52,12 @@ defmodule RoutingBenchmark.BenchmarkController do
       %{type: "info", path: "/", count: 1},
       %{type: "routes", path: "/routes", count: 1},
       %{type: "benchmark", path: "/benchmark", count: 1},
-      %{type: "latency", path: "/benchmark/latency", count: 1},
-      %{type: "stats", path: "/benchmark/stats", count: 1},
+      %{type: "perf", path: "/perf/:route_num", count: 1},
+      %{type: "compare", path: "/compare", count: 1},
       %{type: "static", path: "/static/:n", count: 500, range: "1-500"},
       %{type: "user", path: "/user/:id", count: 300, range: "1-300"},
       %{type: "api", path: "/api/v:version/item/:id", count: 100, range: "v1-v2, ids 1-50"},
-      %{type: "test", path: "/test/route/:id", count: 100, range: "1-100"}
+      %{type: "files", path: "/files/:category/:id", count: 100, range: "5 categories x 20 ids"}
     ]
 
     total = Enum.reduce(routes, 0, fn r, acc -> acc + Map.get(r, :count, 1) end)
@@ -68,7 +72,7 @@ defmodule RoutingBenchmark.BenchmarkController do
   @doc """
   Run comprehensive benchmark of routing performance.
   """
-  def benchmark(conn) do
+  def run_benchmark(conn) do
     # Warm up
     _warmup = for i <- 1..100, do: i
 
@@ -96,59 +100,6 @@ defmodule RoutingBenchmark.BenchmarkController do
   end
 
   @doc """
-  Measure latency for specific route patterns.
-  """
-  def latency_test(conn) do
-    # Measure single route dispatch time
-    times =
-      for _ <- 1..100 do
-        start = System.monotonic_time(:microsecond)
-        # Simulate route matching (already matched by router)
-        _ = %{test: true}
-        System.monotonic_time(:microsecond) - start
-      end
-
-    avg = Enum.sum(times) / length(times)
-    min = Enum.min(times)
-    max = Enum.max(times)
-
-    json(conn, %{
-      test: "Route dispatch latency",
-      iterations: 100,
-      average_microseconds: Float.round(avg, 2),
-      min_microseconds: min,
-      max_microseconds: max,
-      conclusion: "O(1) constant time - independent of total route count"
-    })
-  end
-
-  @doc """
-  Performance statistics and comparison.
-  """
-  def stats(conn) do
-    json(conn, %{
-      framework: "Hibana CompiledRouter",
-      routing_approach: "BEAM Pattern Matching",
-      complexity: "O(1) - Constant Time",
-      total_routes_compiled: @total_routes,
-      dispatch_method: "Function clause pattern matching",
-      comparison: [
-        %{
-          approach: "Linear route scanning",
-          complexity: "O(n)",
-          performance: "Slows down as routes increase"
-        },
-        %{
-          approach: "Hibana CompiledRouter",
-          complexity: "O(1)",
-          performance: "Constant time, independent of route count"
-        }
-      ],
-      beam_advantage: "Erlang VM pattern matching is highly optimized"
-    })
-  end
-
-  @doc """
   Test individual route performance.
   """
   def perf_test(conn) do
@@ -170,7 +121,7 @@ defmodule RoutingBenchmark.BenchmarkController do
   @doc """
   Compare routing performance vs theoretical linear scan.
   """
-  def compare(conn) do
+  def compare_routing(conn) do
     iterations = 1000
 
     # Simulate what linear scanning would take
@@ -179,17 +130,23 @@ defmodule RoutingBenchmark.BenchmarkController do
     # Actual compiled router time (already matched)
     compiled_time = measure_actual_dispatch(iterations)
 
-    speedup = linear_time / compiled_time
+    # Avoid division by zero and ensure float math
+    speedup =
+      if compiled_time > 0 do
+        linear_time / max(compiled_time, 1)
+      else
+        1.0
+      end
 
     json(conn, %{
       comparison: "Linear Scan vs CompiledRouter",
       total_routes: @total_routes,
       iterations: iterations,
-      simulated_linear_scan_microseconds: Float.round(linear_time, 2),
-      compiled_router_microseconds: Float.round(compiled_time, 2),
-      speedup_factor: Float.round(speedup, 1),
+      simulated_linear_scan_microseconds: Float.round(linear_time * 1.0, 2),
+      compiled_router_microseconds: Float.round(compiled_time * 1.0, 2),
+      speedup_factor: Float.round(speedup * 1.0, 1),
       winner: "CompiledRouter",
-      conclusion: "#{Float.round(speedup, 0)}x faster with #{@total_routes} routes"
+      conclusion: "#{trunc(speedup)}x faster with #{@total_routes} routes"
     })
   end
 
@@ -238,15 +195,17 @@ defmodule RoutingBenchmark.BenchmarkController do
   end
 
   @doc """
-  Test route handler for random route testing.
+  File route handler for wildcard patterns.
   """
-  def test_route(conn) do
+  def file_route(conn) do
+    category = conn.params["category"] || "docs"
     id = conn.params["id"] || "0"
 
     json(conn, %{
-      route_type: "test",
-      test_id: id,
-      dispatched_at: System.system_time(:millisecond),
+      route_type: "file",
+      category: category,
+      file_id: id,
+      dispatch_method: "Wildcard pattern match",
       complexity: "O(1)"
     })
   end

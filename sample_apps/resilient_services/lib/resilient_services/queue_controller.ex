@@ -4,14 +4,14 @@ defmodule ResilientServices.QueueController do
   """
   use Hibana.Controller
 
-  def index(conn) do
+  def list_jobs(conn) do
     # List jobs from the queue
     # Would fetch from actual queue
     jobs = []
     json(conn, %{jobs: jobs, count: length(jobs)})
   end
 
-  def create(conn) do
+  def submit_job(conn) do
     # Submit a job to the queue
     job = %{
       id: :erlang.unique_integer([:positive]),
@@ -23,27 +23,29 @@ defmodule ResilientServices.QueueController do
     # Would enqueue to actual queue
     conn
     |> Plug.Conn.put_status(201)
-    |> json(%{status: "enqueued", job: job})
+    |> json(%{status: "enqueued", job_id: job.id, job: job})
   end
 
-  def stats(conn) do
+  def queue_stats(conn) do
     # Get queue statistics
     stats = %{
-      memory_jobs: 0,
-      disk_jobs: 0,
-      in_flight: 0,
-      processed: 0,
-      failed: 0
+      queue: %{
+        memory_jobs: 0,
+        disk_jobs: 0,
+        in_flight: 0,
+        processed: 0,
+        failed: 0
+      }
     }
 
     json(conn, stats)
   end
 
-  def process(conn) do
+  def process_jobs(conn) do
     # Process pending jobs
     processed = 0
     # Would process actual jobs
 
-    json(conn, %{status: "processed", count: processed})
+    json(conn, %{status: "processed", count: processed, processed: processed})
   end
 end

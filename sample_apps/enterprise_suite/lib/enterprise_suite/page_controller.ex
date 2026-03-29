@@ -7,6 +7,6 @@ defmodule EnterpriseSuite.PageController do
 
   def hello(conn) do
     name = conn.params["name"] || "World"
-    json(conn, %{hello: name})
+    json(conn, %{name: name})
   end
 end

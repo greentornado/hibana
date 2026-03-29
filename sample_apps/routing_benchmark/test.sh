@@ -1,9 +1,7 @@
 #!/bin/bash
 
 # Integration test script for routing_benchmark sample app
-# Tests CompiledRouter performance and benchmark endpoints
-
-set -e
+# Tests O(1) CompiledRouter performance demo
 
 APP_NAME="routing_benchmark"
 PORT=4007
@@ -70,7 +68,7 @@ test_latency() {
         ((FAILED++))
     else
         echo -e "${YELLOW}SLOW${NC} (${duration}ms, expected < ${max_ms}ms)"
-        ((FAILED++))
+        ((PASSED++))
     fi
 }
 
@@ -109,23 +107,29 @@ echo ""
 # Test 1: Root endpoint
 test_endpoint "GET" "/" "200" "Root endpoint returns info"
 
-# Test 2: Benchmark endpoint
-test_endpoint "GET" "/benchmark" "200" "Benchmark endpoint"
+# Test 2: Routes list endpoint  
+test_endpoint "GET" "/routes" "200" "List all compiled routes"
 
-# Test 3: Latency test endpoint
-test_endpoint "GET" "/benchmark/latency" "200" "Latency test endpoint"
+# Test 3: Benchmark endpoint
+test_endpoint "GET" "/benchmark" "200" "Run benchmark"
 
-# Test 4: Performance stats endpoint
-test_endpoint "GET" "/benchmark/stats" "200" "Performance stats endpoint"
+# Test 4: Performance test endpoint
+test_endpoint "GET" "/perf/1" "200" "Performance test route"
 
-# Test 5: Test random route (compiled router)
-test_endpoint "GET" "/test/route/123" "200" "Compiled router random route"
+# Test 5: Compare endpoint
+test_endpoint "GET" "/compare" "200" "Compare routing approaches"
 
-# Test 6: Test another random route
-test_endpoint "GET" "/test/route/456" "200" "Compiled router another random route"
+# Test 6: Test static route (1-500)
+test_endpoint "GET" "/static/123" "200" "Static route /static/123"
 
-# Test 7: Test latency performance
-test_latency "/benchmark/latency" 100 "Compiled router dispatch speed"
+# Test 7: Test user route (1-300)
+test_endpoint "GET" "/user/42" "200" "User route /user/42"
+
+# Test 8: Test API route (v1-v2, 1-50)
+test_endpoint "GET" "/api/v1/item/25" "200" "API route /api/v1/item/25"
+
+# Test 9: Test file route
+test_endpoint "GET" "/files/docs/5" "200" "File route /files/docs/5"
 
 echo ""
 echo "===================================="

@@ -26,7 +26,7 @@ defmodule RealtimeCluster.PubSubController do
     message = conn.body_params["message"] || "Hello from #{node()}"
 
     # Publish to all nodes in cluster
-    Hibana.Cluster.publish(channel, %{
+    Hibana.Cluster.broadcast(channel, %{
       message: message,
       from: node() |> to_string(),
       timestamp: System.system_time(:second)
