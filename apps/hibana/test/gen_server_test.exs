@@ -27,11 +27,20 @@ defmodule Hibana.GenServerTest do
     test "starts linked process" do
       {:ok, pid} = TestGenServer.start_link(name: nil)
       assert is_pid(pid)
+      assert Process.alive?(pid)
     end
 
     test "maintains state" do
       {:ok, pid} = TestGenServer.start_link(name: nil)
       assert TestGenServer.get_state(pid) == []
+    end
+
+    test "provides default start_link/1" do
+      assert function_exported?(TestGenServer, :start_link, 1)
+    end
+
+    test "provides overridable init/1" do
+      assert function_exported?(TestGenServer, :init, 1)
     end
   end
 end
