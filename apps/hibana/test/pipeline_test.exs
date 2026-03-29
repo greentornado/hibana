@@ -12,6 +12,8 @@ defmodule Hibana.PipelineTest do
         pipeline :api do
           plug Hibana.Plugins.Logger
         end
+
+        get "/", fn conn -> Hibana.Controller.text(conn, "OK") end
       end
 
       assert function_exported?(TestRouter, :__using__, 1)
@@ -97,7 +99,6 @@ defmodule Hibana.PipelineTest do
     test "standalone plug at module level" do
       defmodule StandalonePlugRouter do
         use Hibana.CompiledRouter
-        import Hibana.Pipeline
 
         plug Hibana.Plugins.Logger
 
