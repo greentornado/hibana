@@ -37,3 +37,4 @@ priv/queue/
 .claude
 *.txt*.dets
 priv/queue/*.dets
+*.dets
