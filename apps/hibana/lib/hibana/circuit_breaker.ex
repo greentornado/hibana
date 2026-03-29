@@ -81,13 +81,6 @@ defmodule Hibana.CircuitBreaker do
       last_failure: nil
     }
 
-    # Store state in ETS for fast concurrent reads
-    # Format: {:state, state_value, failure_count, last_failure}
-    # Format: {:config, timeout}
-    :ets.new(name, [:named_table, :public, read_concurrency: true])
-    :ets.insert(name, {:state, state.state, state.failure_count, state.last_failure})
-    :ets.insert(name, {:config, state.timeout})
-
     {:ok, state}
   end
 
@@ -286,12 +279,6 @@ defmodule Hibana.CircuitBreaker do
   def handle_cast(:try_half_open, state) do
     # Transition to half_open state
     new_state = %{state | state: :half_open, success_count: 0}
-    # Update ETS
-    :ets.insert(
-      state.name,
-      {:state, new_state.state, new_state.failure_count, new_state.last_failure}
-    )
-
     {:noreply, new_state}
   end
 
@@ -319,12 +306,6 @@ defmodule Hibana.CircuitBreaker do
           %{state | success_count: state.success_count + 1}
       end
 
-    # Update ETS
-    :ets.insert(
-      state.name,
-      {:state, new_state.state, new_state.failure_count, new_state.last_failure}
-    )
-
     new_state
   end
 
@@ -340,12 +321,6 @@ defmodule Hibana.CircuitBreaker do
         %{state | failure_count: new_count, last_failure: now}
       end
 
-    # Update ETS
-    :ets.insert(
-      state.name,
-      {:state, new_state.state, new_state.failure_count, new_state.last_failure}
-    )
-
     new_state
   end
 
@@ -353,19 +328,6 @@ defmodule Hibana.CircuitBreaker do
 
   defp time_elapsed?(last, timeout) do
     System.monotonic_time(:millisecond) - last >= timeout
-  end
-
-  @doc """
-  Cleanup ETS table on termination.
-  """
-  def terminate(_reason, state) do
-    try do
-      :ets.delete(state.name)
-    catch
-      _, _ -> :ok
-    end
-
-    :ok
   end
 
   def child_spec(opts) do

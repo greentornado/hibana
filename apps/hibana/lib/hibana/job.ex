@@ -39,19 +39,23 @@ defmodule Hibana.Job do
         try do
           apply(worker_module, :perform, [args])
         rescue
-          _e ->
+          e ->
             require Logger
-            Logger.error("Job failed")
+            Logger.error("[Job] #{worker_module} failed: #{inspect(e)}, args: #{inspect(args)}")
         catch
-          _kind, _reason ->
+          kind, reason ->
             require Logger
-            Logger.error("Job crashed")
+
+            Logger.error(
+              "[Job] #{worker_module} crashed: #{kind} #{inspect(reason)}, args: #{inspect(args)}"
+            )
         end
       end)
 
       {:reply, :ok, state}
     end
 
+    @spec enqueue(module(), any(), GenServer.server()) :: :ok
     def enqueue(worker_module, args, server \\ __MODULE__) do
       GenServer.call(server, {:enqueue, worker_module, args})
     end

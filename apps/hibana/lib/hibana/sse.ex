@@ -205,13 +205,25 @@ defmodule Hibana.SSE do
 
   The connection after streaming.
 
+  ## Safety Warning
+
+  ⚠️ This function executes without any limits or timeouts. For production use
+  with long-running streams, use `stream_loop/2` instead which provides
+  `max_events` and `max_duration` limits to prevent resource exhaustion.
+
   ## Examples
 
       ```elixir
+      # Simple streaming (use with caution - no limits)
       Hibana.SSE.stream(conn, fn send_fn ->
         send_fn.("message", %{text: "Hello!"})
         Process.sleep(1000)
         send_fn.("message", %{text: "World!"})
+      end)
+
+      # Production streaming with limits (recommended)
+      Task.start(fn ->
+        Hibana.SSE.stream_loop(conn, max_events: 1000, max_duration: 60_000)
       end)
       ```
   """

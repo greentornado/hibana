@@ -236,6 +236,8 @@ defmodule Hibana.Queue do
       {:ok, id} = Hibana.Queue.enqueue(SendEmailJob, %{to: "user@example.com"}, delay: 5000, retry: 5)
       ```
   """
+  @spec enqueue(module(), any(), keyword(), GenServer.server()) ::
+          {:ok, String.t()} | {:error, any()}
   def enqueue(module, args, opts \\ [], server \\ __MODULE__) do
     delay = Keyword.get(opts, :delay, 0)
     max_retries = Keyword.get(opts, :retry, 3)
@@ -269,6 +271,8 @@ defmodule Hibana.Queue do
       {:ok, id} = Hibana.Queue.enqueue_at(MyJob, %{data: "value"}, future)
       ```
   """
+  @spec enqueue_at(module(), any(), integer(), keyword(), GenServer.server()) ::
+          {:ok, String.t()} | {:error, any()}
   def enqueue_at(module, args, at, opts \\ [], server \\ __MODULE__) when is_integer(at) do
     max_retries = Keyword.get(opts, :retry, 3)
 
