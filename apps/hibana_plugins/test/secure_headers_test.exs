@@ -73,8 +73,8 @@ defmodule Hibana.Plugins.SecureHeadersTest do
       conn = SecureHeaders.call(conn, opts)
 
       headers = conn.resp_headers
-      refute {"x-frame-options", _} in headers
-      refute {"x-content-type-options", _} in headers
+      refute Enum.any?(headers, fn {name, _} -> name == "x-frame-options" end)
+      refute Enum.any?(headers, fn {name, _} -> name == "x-content-type-options" end)
     end
   end
 

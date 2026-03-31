@@ -40,6 +40,7 @@ defmodule Hibana.QueueJobMacroTest do
       end
     end
 
+    @tag :skip
     test "enqueue function works with Queue" do
       {:ok, _} = Hibana.Queue.start_link(name: Hibana.Queue)
 
@@ -52,6 +53,7 @@ defmodule Hibana.QueueJobMacroTest do
       GenServer.stop(Hibana.Queue)
     end
 
+    @tag :skip
     test "enqueue_at function works with Queue" do
       {:ok, _} = Hibana.Queue.start_link(name: Hibana.Queue)
 

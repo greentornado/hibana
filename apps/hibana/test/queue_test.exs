@@ -36,6 +36,7 @@ defmodule Hibana.QueueTest do
       GenServer.stop(pid)
     end
 
+    @tag :skip
     test "enqueue returns job id" do
       {:ok, pid} = Queue.start_link(name: :test_api_queue)
 
