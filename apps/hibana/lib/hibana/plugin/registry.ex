@@ -50,7 +50,15 @@ defmodule Hibana.Plugin.Registry do
     {:ok, %{plugins: %{}}}
   end
 
-  @doc "Register a plugin module under the given name with options."
+  @doc """
+  Register a plugin module under the given name with options.
+
+  ## Returns
+
+    - `:ok` on success
+    - `{:error, {:init_failed, exception}}` if plugin initialization raises an exception
+    - `{:error, {:init_crashed, kind, reason}}` if plugin initialization crashes
+  """
   def register(server \\ __MODULE__, name, plugin_module, opts \\ []) do
     GenServer.call(server, {:register, name, plugin_module, opts})
   end
@@ -71,9 +79,29 @@ defmodule Hibana.Plugin.Registry do
   end
 
   def handle_call({:register, name, plugin_module, opts}, _from, state) do
-    initialized_opts = plugin_module.init(opts)
-    new_state = put_in(state.plugins[name], %{module: plugin_module, opts: initialized_opts})
-    {:reply, :ok, new_state}
+    try do
+      initialized_opts = plugin_module.init(opts)
+      new_state = put_in(state.plugins[name], %{module: plugin_module, opts: initialized_opts})
+      {:reply, :ok, new_state}
+    rescue
+      e ->
+        require Logger
+
+        Logger.error(
+          "[Plugin.Registry] Failed to initialize plugin #{inspect(name)} (#{inspect(plugin_module)}): #{inspect(e)}"
+        )
+
+        {:reply, {:error, {:init_failed, e}}, state}
+    catch
+      kind, reason ->
+        require Logger
+
+        Logger.error(
+          "[Plugin.Registry] Plugin #{inspect(name)} (#{inspect(plugin_module)}) crashed during init: #{kind} #{inspect(reason)}"
+        )
+
+        {:reply, {:error, {:init_crashed, kind, reason}}, state}
+    end
   end
 
   def handle_call({:unregister, name}, _from, state) do

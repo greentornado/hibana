@@ -17,7 +17,11 @@ defmodule Hibana.Plugins.LiveDashboard do
   ## Options
 
   - `:path` - Base URL path for the dashboard (default: `"/_dashboard"`)
-  - `:auth` - A function `(Plug.Conn.t() -> boolean())` that checks authorization; when `nil`, the dashboard is publicly accessible (default: `nil`)
+  - `:auth` - A function `(Plug.Conn.t() -> boolean())` that checks authorization.
+    **Security Note:** In production, you MUST configure authentication. The dashboard
+    exposes sensitive system information (memory, processes, ETS tables, cluster topology).
+    When `auth` is not provided, access is denied by default. Set to `nil` only for
+    development, or provide a function that validates admin credentials.
   """
 
   use Hibana.Plugin
@@ -31,7 +35,7 @@ defmodule Hibana.Plugins.LiveDashboard do
   def init(opts) do
     %{
       path: Keyword.get(opts, :path, @default_path),
-      auth: Keyword.get(opts, :auth, nil)
+      auth: Keyword.get(opts, :auth, :deny)
     }
   end
 
@@ -39,22 +43,27 @@ defmodule Hibana.Plugins.LiveDashboard do
   def call(conn, %{path: base_path, auth: auth}) do
     cond do
       conn.request_path == base_path or String.starts_with?(conn.request_path, base_path <> "/") ->
-        if is_nil(auth) and Process.get(:__live_dashboard_no_auth_warned__) != true do
+        if auth == :deny do
+          # Default deny - must configure auth in production
           Logger.warning(
-            "[Hibana.Plugins.LiveDashboard] Live dashboard has no authentication configured. Set :auth option for production use."
+            "[Hibana.Plugins.LiveDashboard] Dashboard access denied. Configure :auth option to enable. " <>
+              "Example: plug Hibana.Plugins.LiveDashboard, auth: fn conn -> verify_admin_token(conn) end"
           )
 
-          Process.put(:__live_dashboard_no_auth_warned__, true)
-        end
-
-        if auth && !auth.(conn) do
-          conn |> send_resp(401, "Unauthorized") |> halt()
+          conn
+          |> put_resp_content_type("text/plain")
+          |> send_resp(403, "Forbidden: Dashboard authentication not configured")
+          |> halt()
         else
-          if conn.request_path == base_path do
-            redirect_to(conn, "#{base_path}/overview")
+          if auth && !auth.(conn) do
+            conn |> send_resp(401, "Unauthorized") |> halt()
           else
-            page = conn.request_path |> String.replace_prefix(base_path <> "/", "")
-            serve_page(conn, base_path, page)
+            if conn.request_path == base_path do
+              redirect_to(conn, "#{base_path}/overview")
+            else
+              page = conn.request_path |> String.replace_prefix(base_path <> "/", "")
+              serve_page(conn, base_path, page)
+            end
           end
         end
 
@@ -252,51 +261,64 @@ defmodule Hibana.Plugins.LiveDashboard do
   # ── Processes page ──
 
   defp render_processes do
-    rows =
-      Process.list()
-      |> Enum.map(fn pid ->
-        info =
-          Process.info(pid, [
-            :registered_name,
-            :memory,
-            :reductions,
-            :message_queue_len,
-            :current_function
-          ])
+    process_count = :erlang.system_info(:process_count)
 
-        if info, do: {pid, info}, else: nil
-      end)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.sort_by(fn {_pid, info} -> info[:memory] end, :desc)
-      |> Enum.take(100)
-      |> Enum.map(fn {pid, info} ->
-        name =
-          case info[:registered_name] do
-            [] -> inspect(pid)
-            name -> to_string(name)
-          end
+    # Safety limit: skip detailed enumeration if too many processes
+    if process_count > 10_000 do
+      """
+      <h2>Processes</h2>
+      <div style="padding: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 6px;">
+        <p style="color: #d29922;">⚠️ Process enumeration skipped: #{format_number(process_count)} processes detected.</p>
+        <p style="color: #8b949e; font-size: 12px;">Detailed process listing is disabled when process count exceeds 10,000 to prevent performance issues.</p>
+      </div>
+      """
+    else
+      rows =
+        Process.list()
+        |> Enum.map(fn pid ->
+          info =
+            Process.info(pid, [
+              :registered_name,
+              :memory,
+              :reductions,
+              :message_queue_len,
+              :current_function
+            ])
 
-        func =
-          case info[:current_function] do
-            {m, f, a} -> "#{inspect(m)}.#{f}/#{a}"
-            _ -> "-"
-          end
+          if info, do: {pid, info}, else: nil
+        end)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.sort_by(fn {_pid, info} -> info[:memory] end, :desc)
+        |> Enum.take(100)
+        |> Enum.map(fn {pid, info} ->
+          name =
+            case info[:registered_name] do
+              [] -> inspect(pid)
+              name -> to_string(name)
+            end
 
-        "<tr><td>#{html_escape(inspect(pid))}</td><td>#{html_escape(name)}</td><td>#{format_bytes(info[:memory])}</td><td>#{format_number(info[:reductions])}</td><td>#{info[:message_queue_len]}</td><td>#{html_escape(func)}</td></tr>"
-      end)
-      |> Enum.join("\n")
+          func =
+            case info[:current_function] do
+              {m, f, a} -> "#{inspect(m)}.#{f}/#{a}"
+              _ -> "-"
+            end
 
-    """
-    <h2>Processes (Top 100 by memory)</h2>
-    <table>
-      <thead>
-        <tr><th>PID</th><th>Name</th><th>Memory</th><th>Reductions</th><th>MsgQ</th><th>Current Function</th></tr>
-      </thead>
-      <tbody>
-        #{rows}
-      </tbody>
-    </table>
-    """
+          "<tr><td>#{html_escape(inspect(pid))}</td><td>#{html_escape(name)}</td><td>#{format_bytes(info[:memory])}</td><td>#{format_number(info[:reductions])}</td><td>#{info[:message_queue_len]}</td><td>#{html_escape(func)}</td></tr>"
+        end)
+        |> Enum.join("\n")
+
+      """
+      <h2>Processes (Top 100 by memory)</h2>
+      <table>
+        <thead>
+          <tr><th>PID</th><th>Name</th><th>Memory</th><th>Reductions</th><th>MsgQ</th><th>Current Function</th></tr>
+        </thead>
+        <tbody>
+          #{rows}
+        </tbody>
+      </table>
+      """
+    end
   end
 
   # ── ETS page ──

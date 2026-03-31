@@ -146,9 +146,16 @@ defmodule Hibana.Plugins.Cache do
   end
 
   defp evict_oldest(count) when count > 0 do
-    # Get all entries sorted by expiry (LRU approximation)
+    # Use ETS select to find entries without copying entire table
+    # Sort by expiry timestamp and take the oldest 'count' entries
+    match_spec = [{{:"$1", :"$2", :"$3"}, [], [{{:"$1", :"$2", :"$3"}}]}]
+
     entries =
-      :ets.tab2list(@table)
+      :ets.select(@table, match_spec, count * 10)
+      |> case do
+        {entries, _continuation} -> entries
+        :"$end_of_table" -> []
+      end
       |> Enum.sort_by(fn {_, _, expiry} -> expiry end)
       |> Enum.take(count)
 

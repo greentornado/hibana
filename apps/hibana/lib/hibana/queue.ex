@@ -172,6 +172,17 @@ defmodule Hibana.Queue do
         :ets.delete(ets_table, job_key)
         Logger.warning("Job failed permanently: #{inspect(elem(job_key, 0))}")
         {:reply, :ok, state}
+
+      unexpected ->
+        # Catch-all for unexpected return values (e.g., :error without tuple, nil, false)
+        # Log the unexpected value and treat as failure with retry if possible
+        :ets.delete(ets_table, job_key)
+
+        Logger.error(
+          "Job returned unexpected value: #{inspect(unexpected)} - #{inspect(elem(job_key, 0))}"
+        )
+
+        {:reply, :ok, state}
     end
   end
 

@@ -37,17 +37,15 @@ defmodule Hibana.Plugins.RequestSigning do
       raise ArgumentError, "RequestSigning requires :secret option"
     end
 
-    opts
-    |> Keyword.put_new(:max_age, @default_max_age)
-    |> Keyword.put_new(:algorithm, @algorithm)
+    %{
+      secret: Keyword.fetch!(opts, :secret),
+      max_age: Keyword.get(opts, :max_age, @default_max_age),
+      algorithm: Keyword.get(opts, :algorithm, @algorithm)
+    }
   end
 
   @impl true
-  def call(conn, opts) do
-    secret = Keyword.fetch!(opts, :secret)
-    max_age = Keyword.get(opts, :max_age, @default_max_age)
-    algorithm = Keyword.get(opts, :algorithm, @algorithm)
-
+  def call(conn, %{secret: secret, max_age: max_age, algorithm: algorithm}) do
     with {:ok, signature} <- get_header(conn, @signature_header),
          {:ok, timestamp_str} <- get_header(conn, @timestamp_header),
          {:ok, timestamp} <- parse_timestamp(timestamp_str),

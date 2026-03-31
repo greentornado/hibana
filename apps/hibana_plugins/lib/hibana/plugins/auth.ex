@@ -17,10 +17,13 @@ defmodule Hibana.Plugins.Auth do
       # With custom realm
       plug Hibana.Plugins.Auth, realm: "Admin Area"
 
-      # With custom validator
+      # With custom validator (use secure_compare for timing attack protection)
       plug Hibana.Plugins.Auth,
         validator: fn username, password ->
-          username == "admin" && password == "secret"
+          # Use Plug.Crypto.secure_compare for constant-time comparison
+          user_match = Plug.Crypto.secure_compare(username, "admin")
+          pass_match = Plug.Crypto.secure_compare(password, "secret")
+          user_match and pass_match
         end
 
   ## Options
@@ -30,11 +33,14 @@ defmodule Hibana.Plugins.Auth do
 
   ## Validator Function
 
-  The validator receives username and password:
+  The validator receives username and password. **Use constant-time comparison**
+  to prevent timing attacks:
 
       validator = fn username, password ->
-        # Check against database, LDAP, etc.
-        username == "admin" && password == "secret"
+        # Secure comparison against timing attacks
+        user_match = Plug.Crypto.secure_compare(username, expected_user)
+        pass_match = Plug.Crypto.secure_compare(password, expected_pass)
+        user_match and pass_match
       end
 
   ## Conn Assignments

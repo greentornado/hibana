@@ -26,6 +26,23 @@ defmodule Hibana.CircuitBreaker do
         {:error, :circuit_open} -> handle_fallback()
         {:error, reason} -> handle_error(reason)
       end
+
+  ## Telemetry
+
+  The circuit breaker emits the following telemetry events:
+
+  - `[:hibana, :circuit_breaker, :init]` - Circuit breaker initialized
+  - `[:hibana, :circuit_breaker, :state_change]` - State transition (closed/open/half_open)
+  - `[:hibana, :circuit_breaker, :success]` - Successful call
+  - `[:hibana, :circuit_breaker, :failure]` - Failed call  
+  - `[:hibana, :circuit_breaker, :reject]` - Call rejected (circuit open)
+
+  Example handler:
+
+      :telemetry.attach_many("circuit-breaker-metrics", [
+        {[:hibana, :circuit_breaker, :state_change], &handle_state_change/4, nil},
+        {[:hibana, :circuit_breaker, :failure], &handle_failure/4, nil}
+      ])
   """
 
   use GenServer
@@ -81,6 +98,13 @@ defmodule Hibana.CircuitBreaker do
       last_failure: nil
     }
 
+    # Emit telemetry event for circuit breaker initialization
+    :telemetry.execute(
+      [:hibana, :circuit_breaker, :init],
+      %{count: 1},
+      %{name: name, state: :closed, threshold: state.threshold}
+    )
+
     {:ok, state}
   end
 
@@ -91,7 +115,8 @@ defmodule Hibana.CircuitBreaker do
   `{:error, :circuit_open}` immediately without calling the function.
   In half-open state, allows the call through as a test.
 
-  Uses ETS for fast state reads to avoid GenServer bottleneck.
+  Uses atomic state check-and-transition to prevent race conditions where
+  multiple concurrent calls could all enter half_open state simultaneously.
 
   ## Parameters
 
@@ -115,57 +140,43 @@ defmodule Hibana.CircuitBreaker do
       ```
   """
   def call(name, fun) do
-    # Get current state from GenServer to ensure consistency
-    # (Removed ETS fast-path to prevent state divergence)
-    circuit_state = GenServer.call(name, :get_state)
+    # Atomic check-and-transition to prevent race conditions
+    # This ensures only one call can transition from :open to :half_open at a time
+    case GenServer.call(name, :check_and_execute) do
+      {:execute, circuit_state} ->
+        execute_and_report(name, fun, circuit_state)
 
-    case circuit_state do
-      :closed ->
-        execute_and_report(name, fun)
+      {:reject, :circuit_open} ->
+        # Emit telemetry for circuit open rejection
+        :telemetry.execute(
+          [:hibana, :circuit_breaker, :reject],
+          %{count: 1},
+          %{name: name, state: :open}
+        )
 
-      :half_open ->
-        execute_and_report(name, fun)
-
-      :open ->
-        # Check if we should transition to half_open
-        case should_try_half_open?(name) do
-          true ->
-            GenServer.cast(name, :try_half_open)
-            execute_and_report(name, fun)
-
-          false ->
-            {:error, :circuit_open}
-        end
+        {:error, :circuit_open}
     end
   end
 
-  defp execute_and_report(name, fun) do
+  defp execute_and_report(name, fun, circuit_state) do
     try do
       result = fun.()
       # Use cast for non-blocking success report
-      GenServer.cast(name, {:report_result, :success})
+      GenServer.cast(name, {:report_result, :success, circuit_state})
       {:ok, result}
     rescue
       e ->
         # Use call for synchronous failure report (ensures state updated immediately)
-        GenServer.call(name, {:report_result, :failure})
+        GenServer.call(name, {:report_result, :failure, circuit_state})
         {:error, e}
     catch
       :exit, reason ->
-        GenServer.call(name, {:report_result, :failure})
+        GenServer.call(name, {:report_result, :failure, circuit_state})
         {:error, reason}
 
       :throw, value ->
-        GenServer.call(name, {:report_result, :failure})
+        GenServer.call(name, {:report_result, :failure, circuit_state})
         {:error, {:throw, value}}
-    end
-  end
-
-  defp should_try_half_open?(name) do
-    # Query GenServer for consistent state instead of ETS
-    case GenServer.call(name, :check_timeout) do
-      {:can_retry, true} -> true
-      _ -> false
     end
   end
 
@@ -215,38 +226,43 @@ defmodule Hibana.CircuitBreaker do
     GenServer.call(name, :reset)
   end
 
-  def handle_call(:check_timeout, _from, state) do
-    # Check if timeout has elapsed without transitioning state
-    can_retry = state.state == :open and time_elapsed?(state.last_failure, state.timeout)
-    {:reply, {:can_retry, can_retry}, state}
-  end
+  def handle_call(:check_and_execute, _from, state) do
+    # Atomic check-and-transition to prevent race conditions
+    now = System.monotonic_time(:millisecond)
 
-  def handle_call(:get_state, _from, state) do
-    # Simple state getter for the call/2 function
-    {:reply, state.state, state}
-  end
+    response =
+      case state.state do
+        :closed ->
+          {:execute, :closed}
 
-  def handle_call(:check_state, _from, state) do
-    case state.state do
-      :open ->
-        if time_elapsed?(state.last_failure, state.timeout) do
-          new_state = %{state | state: :half_open, success_count: 0}
-          {:reply, {:ok, :half_open}, new_state}
-        else
-          {:reply, {:error, :circuit_open}, state}
-        end
+        :half_open ->
+          {:execute, :half_open}
 
-      other ->
-        {:reply, {:ok, other}, state}
+        :open ->
+          # Check if timeout has elapsed for trying half_open
+          if time_elapsed?(state.last_failure, state.timeout) do
+            # Atomic transition to half_open
+            new_state = %{state | state: :half_open, success_count: 0}
+            {:reply, {:execute, :half_open}, new_state}
+          else
+            {:reject, :circuit_open}
+          end
+      end
+
+    # If we already constructed a reply above (:open -> half_open transition), use it
+    # Otherwise return the response
+    case response do
+      {:reply, reply, new_state} -> {:reply, reply, new_state}
+      result -> {:reply, result, state}
     end
   end
 
-  def handle_call({:report_result, :success}, _from, state) do
+  def handle_call({:report_result, :success, _circuit_state}, _from, state) do
     new_state = handle_success_result(state)
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:report_result, :failure}, _from, state) do
+  def handle_call({:report_result, :failure, _circuit_state}, _from, state) do
     new_state = handle_failure_result(state)
     {:reply, :ok, new_state}
   end
@@ -266,24 +282,25 @@ defmodule Hibana.CircuitBreaker do
   end
 
   # Cast versions for better performance (non-blocking)
-  def handle_cast({:report_result, :success}, state) do
+  def handle_cast({:report_result, :success, _circuit_state}, state) do
     new_state = handle_success_result(state)
     {:noreply, new_state}
   end
 
-  def handle_cast({:report_result, :failure}, state) do
+  def handle_cast({:report_result, :failure, _circuit_state}, state) do
     new_state = handle_failure_result(state)
-    {:noreply, new_state}
-  end
-
-  def handle_cast(:try_half_open, state) do
-    # Transition to half_open state
-    new_state = %{state | state: :half_open, success_count: 0}
     {:noreply, new_state}
   end
 
   def handle_info(:attempt_reset, state) do
     if state.state == :open do
+      # Transition to half_open - emit state change telemetry
+      :telemetry.execute(
+        [:hibana, :circuit_breaker, :state_change],
+        %{count: 1},
+        %{name: state.name, from: :open, to: :half_open}
+      )
+
       {:noreply, %{state | state: :half_open, success_count: 0}}
     else
       {:noreply, state}
@@ -291,12 +308,26 @@ defmodule Hibana.CircuitBreaker do
   end
 
   defp handle_success_result(state) do
+    # Emit telemetry for success
+    :telemetry.execute(
+      [:hibana, :circuit_breaker, :success],
+      %{count: 1},
+      %{name: state.name, state: state.state}
+    )
+
     new_state =
       case state.state do
         :half_open ->
           new_count = state.success_count + 1
 
           if new_count >= 3 do
+            # Transition to closed - emit state change telemetry
+            :telemetry.execute(
+              [:hibana, :circuit_breaker, :state_change],
+              %{count: 1},
+              %{name: state.name, from: :half_open, to: :closed}
+            )
+
             %{state | state: :closed, failure_count: 0, success_count: 0}
           else
             %{state | success_count: new_count}
@@ -313,9 +344,24 @@ defmodule Hibana.CircuitBreaker do
     new_count = state.failure_count + 1
     now = System.monotonic_time(:millisecond)
 
+    # Emit telemetry for failure
+    :telemetry.execute(
+      [:hibana, :circuit_breaker, :failure],
+      %{count: 1},
+      %{name: state.name, state: state.state, failure_count: new_count}
+    )
+
     new_state =
       if new_count >= state.threshold do
         Process.send_after(self(), :attempt_reset, state.timeout)
+
+        # Transition to open - emit state change telemetry
+        :telemetry.execute(
+          [:hibana, :circuit_breaker, :state_change],
+          %{count: 1},
+          %{name: state.name, from: state.state, to: :open}
+        )
+
         %{state | state: :open, failure_count: new_count, success_count: 0, last_failure: now}
       else
         %{state | failure_count: new_count, last_failure: now}

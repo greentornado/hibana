@@ -63,6 +63,21 @@ defmodule Hibana.Job do
 
   defmacro __using__(_opts \\ []) do
     quote do
+      @doc """
+      Enqueues the job with the given arguments via Hibana.Job.Worker.
+
+      ## Parameters
+
+        - `args` - The arguments to pass to the job's `perform/1` function
+
+      ## Returns
+
+      `:ok`
+
+      ## Examples
+
+          MyJob.enqueue(%{user_id: 123, action: "send_email"})
+      """
       def enqueue(args) do
         Hibana.Job.Worker.enqueue(__MODULE__, args)
       end

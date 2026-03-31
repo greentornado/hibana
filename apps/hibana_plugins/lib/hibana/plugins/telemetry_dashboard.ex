@@ -15,7 +15,11 @@ defmodule Hibana.Plugins.TelemetryDashboard do
   ## Options
 
   - `:path` - URL path for the dashboard page (default: `"/dashboard"`)
-  - `:auth` - A function `(Plug.Conn.t() -> boolean())` that checks authorization; when `nil`, the dashboard is publicly accessible (default: `nil`)
+  - `:auth` - A function `(Plug.Conn.t() -> boolean())` that checks authorization. 
+    **Security Note:** In production, you MUST configure authentication. The dashboard
+    exposes sensitive system information (memory, processes, cluster nodes, ETS tables).
+    When `auth` is not provided, access is denied by default. Set to `nil` only for
+    development, or provide a function that validates admin credentials.
   """
 
   use Hibana.Plugin
@@ -26,25 +30,30 @@ defmodule Hibana.Plugins.TelemetryDashboard do
   def init(opts) do
     %{
       path: Keyword.get(opts, :path, "/dashboard"),
-      auth: Keyword.get(opts, :auth, nil)
+      auth: Keyword.get(opts, :auth, :deny)
     }
   end
 
   @impl true
   def call(conn, %{path: path, auth: auth}) do
     if conn.request_path == path and conn.method == "GET" do
-      if is_nil(auth) and Process.get(:__telemetry_dashboard_no_auth_warned__) != true do
+      if auth == :deny do
+        # Default deny - must configure auth in production
         Logger.warning(
-          "[Hibana.Plugins.TelemetryDashboard] Telemetry dashboard has no authentication configured. Set :auth option for production use."
+          "[Hibana.Plugins.TelemetryDashboard] Dashboard access denied. Configure :auth option to enable. " <>
+            "Example: plug Hibana.Plugins.TelemetryDashboard, auth: fn conn -> verify_admin_token(conn) end"
         )
 
-        Process.put(:__telemetry_dashboard_no_auth_warned__, true)
-      end
-
-      if auth && !auth.(conn) do
-        conn |> send_resp(401, "Unauthorized") |> halt()
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(403, "Forbidden: Dashboard authentication not configured")
+        |> halt()
       else
-        render_dashboard(conn)
+        if auth && !auth.(conn) do
+          conn |> send_resp(401, "Unauthorized") |> halt()
+        else
+          render_dashboard(conn)
+        end
       end
     else
       conn

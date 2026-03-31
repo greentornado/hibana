@@ -167,7 +167,8 @@ defmodule Hibana.Router do
     rescue
       error ->
         require Logger
-        Logger.error("Controller error in #{inspect(handler)}.#{action}: #{inspect(error)}")
+        stacktrace = Exception.format(:error, error, __STACKTRACE__)
+        Logger.error("Controller error in #{inspect(handler)}.#{action}:\n#{stacktrace}")
 
         conn
         |> put_resp_content_type("application/json")
@@ -184,7 +185,8 @@ defmodule Hibana.Router do
     rescue
       error ->
         require Logger
-        Logger.error("Handler function error: #{inspect(error)}")
+        stacktrace = Exception.format(:error, error, __STACKTRACE__)
+        Logger.error("Handler function error:\n#{stacktrace}")
 
         conn
         |> put_resp_content_type("application/json")
@@ -197,7 +199,10 @@ defmodule Hibana.Router do
 
   defp send_404(conn) do
     conn
-    |> put_resp_content_type("text/plain")
-    |> send_resp(404, "Not Found")
+    |> put_resp_content_type("application/json")
+    |> send_resp(
+      404,
+      Jason.encode!(%{error: "Not Found", status: 404, path: conn.request_path})
+    )
   end
 end

@@ -136,8 +136,16 @@ defmodule Hibana.BanditEndpoint do
       ]
 
       case Bandit.start_link(bandit_opts) do
-        {:error, :eaddrinuse} -> {:error, :address_in_use}
-        result -> result
+        {:error, :eaddrinuse} ->
+          {:error, :address_in_use}
+
+        {:ok, pid} = result ->
+          # Register server PID for graceful shutdown
+          Process.register(pid, Hibana.Endpoint.Server)
+          result
+
+        result ->
+          result
       end
     end
   end

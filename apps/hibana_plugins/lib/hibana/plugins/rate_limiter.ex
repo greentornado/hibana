@@ -97,7 +97,64 @@ defmodule Hibana.Plugins.RateLimiter do
   """
   def start_link do
     ensure_table_exists()
+    # Start periodic cleanup process
+    spawn_cleanup_process()
     {:ok, self()}
+  end
+
+  defp spawn_cleanup_process do
+    # Spawn a process that periodically cleans up expired entries
+    spawn(fn ->
+      cleanup_loop()
+    end)
+  end
+
+  defp cleanup_loop do
+    # Run cleanup every 5 minutes
+    Process.sleep(300_000)
+    cleanup_expired_entries()
+    cleanup_loop()
+  end
+
+  @doc """
+  Cleans up expired rate limit entries from ETS table.
+
+  This is called periodically to prevent unbounded memory growth.
+  """
+  def cleanup_expired_entries do
+    now = System.system_time(:millisecond)
+
+    # Get current windows for all keys
+    expired_keys =
+      try do
+        :ets.select(:rate_limiter, [
+          {{:"$1", :"$2", :"$3", :"$4"}, [], [{{:"$1", :"$2", :"$3"}}]}
+        ])
+        |> Enum.filter(fn {_key, max_requests, last_refill} ->
+          # Estimate window based on max_requests (default 60s per 100 requests)
+          estimated_window = max_requests * 600
+          now - last_refill >= estimated_window
+        end)
+        |> Enum.map(fn {key, _, _} -> key end)
+      rescue
+        _ -> []
+      end
+
+    # Delete expired entries
+    Enum.each(expired_keys, fn key ->
+      try do
+        :ets.delete(:rate_limiter, key)
+      rescue
+        _ -> :ok
+      end
+    end)
+
+    if length(expired_keys) > 0 do
+      require Logger
+      Logger.debug("[RateLimiter] Cleaned up #{length(expired_keys)} expired entries")
+    end
+
+    :ok
   end
 
   defp ensure_table_exists do
@@ -161,6 +218,12 @@ defmodule Hibana.Plugins.RateLimiter do
 
       _ ->
         # First request for this key
+        # Clean up any expired entries while we're at it (opportunistic cleanup)
+        if rem(:erlang.phash2(key), 100) == 0 do
+          # 1% chance to trigger cleanup on new entries
+          spawn(&cleanup_expired_entries/0)
+        end
+
         :ets.insert(:rate_limiter, {key, max_requests, now, max_requests - 1})
         {true, max_requests - 1}
     end

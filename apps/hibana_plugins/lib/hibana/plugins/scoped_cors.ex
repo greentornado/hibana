@@ -109,6 +109,19 @@ defmodule Hibana.Plugins.ScopedCORS do
     credentials = Keyword.get(opts, :credentials, false)
     max_age = Keyword.get(opts, :max_age, 86400)
 
+    # SECURITY: Validate that credentials: true is not combined with wildcard origins
+    # This combination is rejected by browsers and poses a security risk
+    if credentials && "*" in origins do
+      require Logger
+
+      Logger.warning(
+        "[ScopedCORS] Security violation: Cannot use credentials: true with wildcard origins. Ignoring credentials."
+      )
+
+      # Force credentials to false when using wildcard origins
+      credentials = false
+    end
+
     allowed_origin =
       if "*" in origins, do: origin, else: if(origin in origins, do: origin, else: nil)
 

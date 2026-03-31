@@ -87,6 +87,8 @@ defmodule Hibana.Endpoint do
   option. Supports `:http` options for IP and port binding. Returns `:ignore`
   if `:start_server` is set to `false` in the `:hibana` config (useful for tests).
 
+  The server PID is registered under `Hibana.Endpoint.Server` for graceful shutdown.
+
   ## Parameters
 
     - `plug_module` - The plug module to serve (default: `__MODULE__`)
@@ -124,8 +126,16 @@ defmodule Hibana.Endpoint do
       ]
 
       case Plug.Cowboy.http(plug_module, [], http_options ++ [ref: ref]) do
-        {:error, :eaddrinuse} -> {:error, :address_in_use}
-        result -> result
+        {:error, :eaddrinuse} ->
+          {:error, :address_in_use}
+
+        {:ok, pid} = result ->
+          # Register server PID for graceful shutdown
+          Process.register(pid, Hibana.Endpoint.Server)
+          result
+
+        result ->
+          result
       end
     end
   end

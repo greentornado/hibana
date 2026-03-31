@@ -166,14 +166,9 @@ defmodule Hibana.Plugins.TOTP do
   defp algorithm_name(:sha512), do: "SHA512"
   defp algorithm_name(other), do: to_string(other)
 
-  defp constant_time_compare(a, b) when byte_size(a) != byte_size(b), do: false
-
+  # Use Plug.Crypto.secure_compare for timing attack resistant comparison
+  # This is constant-time regardless of input sizes or content
   defp constant_time_compare(a, b) do
-    a_bytes = :binary.bin_to_list(a)
-    b_bytes = :binary.bin_to_list(b)
-
-    Enum.zip(a_bytes, b_bytes)
-    |> Enum.reduce(0, fn {x, y}, acc -> Bitwise.bor(acc, Bitwise.bxor(x, y)) end)
-    |> Kernel.==(0)
+    Plug.Crypto.secure_compare(a, b)
   end
 end

@@ -61,7 +61,7 @@ defmodule Hibana.Plugins.Admin do
       path: Keyword.get(opts, :path, "/admin"),
       resources: Keyword.get(opts, :resources, []) |> normalize_resources(),
       title: Keyword.get(opts, :title, "Admin Dashboard"),
-      auth: Keyword.get(opts, :auth, nil)
+      auth: Keyword.get(opts, :auth, :deny)
     }
   end
 
@@ -70,22 +70,34 @@ defmodule Hibana.Plugins.Admin do
     request_path = conn.request_path
 
     if String.starts_with?(request_path, path) do
-      # Check auth if configured
-      if config.auth do
-        case config.auth.(conn) do
-          true -> handle_admin(conn, config)
-          _ -> conn |> send_resp(401, "Unauthorized") |> halt()
-        end
-      else
-        if Process.get(:__admin_no_auth_warned__) != true do
+      # Check auth - defaults to deny access
+      case config.auth do
+        :deny ->
+          # Default deny - must configure auth in production
+          Logger.warning(
+            "[Hibana.Plugins.Admin] Admin access denied. Configure :auth option to enable. " <>
+              "Example: plug Hibana.Plugins.Admin, auth: fn conn -> verify_admin_token(conn) end"
+          )
+
+          conn
+          |> put_resp_content_type("text/plain")
+          |> send_resp(403, "Forbidden: Admin authentication not configured")
+          |> halt()
+
+        nil ->
+          # Legacy nil auth (not recommended)
           Logger.warning(
             "[Hibana.Plugins.Admin] Admin dashboard has no authentication configured. Set :auth option for production use."
           )
 
-          Process.put(:__admin_no_auth_warned__, true)
-        end
+          handle_admin(conn, config)
 
-        handle_admin(conn, config)
+        validator ->
+          if validator.(conn) do
+            handle_admin(conn, config)
+          else
+            conn |> send_resp(401, "Unauthorized") |> halt()
+          end
       end
     else
       conn

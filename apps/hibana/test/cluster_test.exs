@@ -3,7 +3,28 @@ defmodule Hibana.ClusterTest do
 
   alias Hibana.Cluster
 
+  # Start registry for each test
+  setup do
+    # Ensure Registry is started before Cluster
+    case Registry.start_link(keys: :duplicate, name: Hibana.Cluster.PubSub) do
+      {:ok, _} -> :ok
+      {:error, {:already_started, _}} -> :ok
+    end
+
+    :ok
+  end
+
   describe "start_link/1" do
+    setup do
+      # Ensure Registry is started for each test in this describe
+      case Registry.start_link(keys: :duplicate, name: Hibana.Cluster.PubSub) do
+        {:ok, _} -> :ok
+        {:error, {:already_started, _}} -> :ok
+      end
+
+      :ok
+    end
+
     test "starts with epmd strategy" do
       {:ok, pid} = Cluster.start_link(strategy: :epmd, hosts: [])
       assert Process.alive?(pid)
@@ -12,14 +33,14 @@ defmodule Hibana.ClusterTest do
     end
 
     test "starts and falls back to epmd for dns strategy" do
-      {:ok, pid} = Cluster.start_link(strategy: :dns, hosts: [])
+      {:ok, pid} = Cluster.start_link(strategy: :dns, query: "test.local")
       assert Process.alive?(pid)
 
       :ok = GenServer.stop(pid)
     end
 
     test "starts and falls back to epmd for gossip strategy" do
-      {:ok, pid} = Cluster.start_link(strategy: :gossip, hosts: [])
+      {:ok, pid} = Cluster.start_link(strategy: :gossip, port: 0)
       assert Process.alive?(pid)
 
       :ok = GenServer.stop(pid)
@@ -34,6 +55,12 @@ defmodule Hibana.ClusterTest do
 
   describe "PubSub operations" do
     setup do
+      # Ensure Registry is started
+      case Registry.start_link(keys: :duplicate, name: Hibana.Cluster.PubSub) do
+        {:ok, _} -> :ok
+        {:error, {:already_started, _}} -> :ok
+      end
+
       {:ok, pid} = Cluster.start_link(name: :test_cluster, hosts: [])
 
       on_exit(fn ->
@@ -42,6 +69,8 @@ defmodule Hibana.ClusterTest do
         catch
           _, _ -> :ok
         end
+
+        # Note: We keep Registry alive for other tests
       end)
 
       {:ok, pid: pid}
@@ -70,6 +99,12 @@ defmodule Hibana.ClusterTest do
 
   describe "node operations" do
     setup do
+      # Ensure Registry is started
+      case Registry.start_link(keys: :duplicate, name: Hibana.Cluster.PubSub) do
+        {:ok, _} -> :ok
+        {:error, {:already_started, _}} -> :ok
+      end
+
       {:ok, pid} = Cluster.start_link(name: :test_cluster_nodes, hosts: [])
 
       on_exit(fn ->
@@ -104,6 +139,12 @@ defmodule Hibana.ClusterTest do
 
   describe "RPC operations" do
     setup do
+      # Ensure Registry is started
+      case Registry.start_link(keys: :duplicate, name: Hibana.Cluster.PubSub) do
+        {:ok, _} -> :ok
+        {:error, {:already_started, _}} -> :ok
+      end
+
       {:ok, pid} = Cluster.start_link(name: :test_cluster_rpc, hosts: [])
 
       on_exit(fn ->
@@ -118,13 +159,19 @@ defmodule Hibana.ClusterTest do
     end
 
     test "calls function on node", %{pid: _pid} do
-      # Call on current node
+      # Call on current node - Kernel.+ is whitelisted by default
       result = Cluster.call_on(node(), Kernel, :+, [1, 2])
       assert result == 3
     end
 
+    test "calls blocked for non-whitelisted functions", %{pid: _pid} do
+      # Call on current node - non-whitelisted function should be blocked
+      result = Cluster.call_on(node(), System, :cmd, ["echo", ["hello"]])
+      assert result == {:error, :rpc_not_allowed}
+    end
+
     test "casts function to node", %{pid: _pid} do
-      # Cast returns true (always, since it's asynchronous)
+      # Cast returns true (always, since it's asynchronous) for whitelisted functions
       assert Cluster.cast_on(node(), Kernel, :+, [1, 2]) == true
     end
 
@@ -133,6 +180,13 @@ defmodule Hibana.ClusterTest do
       assert is_list(results)
       assert is_list(bad_nodes)
       assert length(results) >= 1
+    end
+
+    test "rpc whitelist configuration", %{pid: _pid} do
+      whitelist = Cluster.get_rpc_whitelist()
+      assert is_list(whitelist) or whitelist == :all
+      # Kernel.+ should be in default whitelist
+      assert Cluster.rpc_allowed?(Kernel, :+)
     end
   end
 end

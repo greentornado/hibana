@@ -91,6 +91,11 @@ defmodule Hibana.Plugins.JWT do
                 |> assign(:current_user, claims["sub"])
 
               {:error, _reason} ->
+                # SECURITY NOTE: We intentionally ignore the specific error reason
+                # (token_expired, invalid_signature, etc.) and return a generic
+                # "Unauthorized" message to the client. This prevents information
+                # disclosure that could help attackers. Do not change this to expose
+                # detailed error reasons to the client.
                 unauthorized(conn)
             end
         end

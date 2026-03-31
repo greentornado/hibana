@@ -132,7 +132,7 @@ defmodule Hibana.Plugins.HealthCheck do
   end
 
   defp check_processes do
-    count = length(Process.list())
+    count = :erlang.system_info(:process_count)
     max_processes = Application.get_env(:hibana_plugins, :health_check_process_threshold, 100_000)
     if count < max_processes, do: :ok, else: :warn
   end

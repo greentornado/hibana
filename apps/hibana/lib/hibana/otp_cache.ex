@@ -152,6 +152,9 @@ defmodule Hibana.OTPCache do
   and is not expired, returns the cached value. Otherwise, calls
   `compute_fn`, stores the result with the given TTL, and returns it.
 
+  This operation is atomic - the compute function is only called once
+  even with concurrent requests for the same key.
+
   ## Parameters
 
     - `server` - The cache server name (default: `Hibana.OTPCache`)
@@ -174,16 +177,8 @@ defmodule Hibana.OTPCache do
   """
   def get_or_compute(server \\ __MODULE__, key, compute_fn, opts \\ []) do
     ttl = Keyword.get(opts, :ttl, 300_000)
-
-    case get(server, key) do
-      nil ->
-        value = compute_fn.()
-        put(server, key, value, ttl: ttl)
-        {:ok, value}
-
-      value ->
-        {:ok, value}
-    end
+    # Atomic get-or-compute operation
+    GenServer.call(server, {:get_or_compute, key, compute_fn, ttl})
   end
 
   @doc """
@@ -306,6 +301,57 @@ defmodule Hibana.OTPCache do
           {:reply, nil, %{state | cache: Map.delete(cache, key)}}
         else
           {:reply, v, state}
+        end
+    end
+  end
+
+  def handle_call({:get_or_compute, key, compute_fn, ttl}, _from, %{cache: cache} = state) do
+    case Map.get(cache, key) do
+      nil ->
+        # Cache miss - compute and store with exception handling
+        try do
+          value = compute_fn.()
+          expiry = System.system_time(:millisecond) + ttl
+          new_cache = Map.put(cache, key, {value, expiry})
+          {:reply, {:ok, value}, %{state | cache: new_cache}}
+        rescue
+          e ->
+            require Logger
+
+            Logger.error(
+              "[OTPCache] compute_fn for key #{inspect(key)} raised exception: #{inspect(e)}"
+            )
+
+            {:reply, {:error, {:compute_failed, e}}, state}
+        end
+
+      {v, nil} ->
+        # No expiry - valid cache hit
+        {:reply, {:ok, v}, state}
+
+      {v, expiry} ->
+        now = System.system_time(:millisecond)
+
+        if now > expiry do
+          # Expired - recompute and store with exception handling
+          try do
+            value = compute_fn.()
+            new_expiry = now + ttl
+            new_cache = Map.put(cache, key, {value, new_expiry})
+            {:reply, {:ok, value}, %{state | cache: new_cache}}
+          rescue
+            e ->
+              require Logger
+
+              Logger.error(
+                "[OTPCache] compute_fn for key #{inspect(key)} raised exception: #{inspect(e)}"
+              )
+
+              {:reply, {:error, {:compute_failed, e}}, state}
+          end
+        else
+          # Valid cache hit
+          {:reply, {:ok, v}, state}
         end
     end
   end

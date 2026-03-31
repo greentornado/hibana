@@ -48,11 +48,16 @@ defmodule Hibana.Plugins.SEO do
   # ── Plug callbacks ──
 
   @impl true
-  def init(opts), do: opts
+  def init(opts) do
+    %{
+      sitemap_urls: Keyword.get(opts, :sitemap_urls, []),
+      robots: Keyword.get(opts, :robots, allow: ["/"], disallow: ["/admin"], sitemap: nil)
+    }
+  end
 
   @impl true
-  def call(conn, opts) do
-    serve_seo_files(conn, opts)
+  def call(conn, %{sitemap_urls: sitemap_urls, robots: robots}) do
+    serve_seo_files(conn, sitemap_urls: sitemap_urls, robots: robots)
   end
 
   # ── Meta tags ──

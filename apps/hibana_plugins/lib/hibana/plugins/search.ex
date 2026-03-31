@@ -39,12 +39,14 @@ defmodule Hibana.Plugins.Search do
   # ── Plug callbacks ──
 
   @impl true
-  def init(opts), do: opts
+  def init(opts) do
+    %{
+      path: Keyword.get(opts, :path, @default_path)
+    }
+  end
 
   @impl true
-  def call(conn, opts) do
-    search_path = Keyword.get(opts, :path, @default_path)
-
+  def call(conn, %{path: search_path}) do
     if conn.request_path == search_path and conn.method == "GET" do
       serve_search(conn)
     else

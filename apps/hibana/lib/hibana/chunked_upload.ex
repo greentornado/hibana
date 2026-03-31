@@ -104,7 +104,14 @@ defmodule Hibana.ChunkedUpload do
     chunk_num = get_header(conn, "x-chunk-number") |> parse_int(0)
     total_chunks = get_header(conn, "x-total-chunks") |> parse_int(1)
     filename = get_header(conn, "x-filename") || "upload"
-    safe_filename = Path.basename(filename)
+
+    # Sanitize filename consistently: remove path components, null bytes, and special chars
+    # Also limit length to 255 characters to prevent filesystem issues
+    safe_filename =
+      filename
+      |> Path.basename()
+      |> String.replace(~r/[\x00-\x1f\x7f\/\\<>:"|?*]/, "_")
+      |> String.slice(0, 255)
 
     unless upload_id do
       {:error, "Missing X-Upload-Id header"}

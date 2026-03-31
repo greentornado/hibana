@@ -85,26 +85,38 @@ defmodule Hibana.Plugins.Upload do
 
             true ->
               File.mkdir_p!(upload_dir)
-              safe_filename = Path.basename(filename)
 
-              dest_filename =
-                "#{:crypto.strong_rand_bytes(8) |> Base.encode16()}-#{safe_filename}"
+              # Comprehensive filename sanitization
+              safe_filename =
+                filename
+                |> Path.basename()
+                |> sanitize_filename()
 
-              dest_path = Path.join(upload_dir, dest_filename)
-              File.cp!(tmp_path, dest_path)
+              if safe_filename == "" do
+                conn
+                |> put_resp_content_type("application/json")
+                |> send_resp(400, Jason.encode!(%{error: "Invalid filename"}))
+                |> halt()
+              else
+                dest_filename =
+                  "#{:crypto.strong_rand_bytes(8) |> Base.encode16()}-#{safe_filename}"
 
-              conn
-              |> put_resp_content_type("application/json")
-              |> send_resp(
-                200,
-                Jason.encode!(%{
-                  message: "File uploaded successfully",
-                  filename: dest_filename,
-                  size: File.stat!(dest_path).size,
-                  content_type: content_type
-                })
-              )
-              |> halt()
+                dest_path = Path.join(upload_dir, dest_filename)
+                File.cp!(tmp_path, dest_path)
+
+                conn
+                |> put_resp_content_type("application/json")
+                |> send_resp(
+                  200,
+                  Jason.encode!(%{
+                    message: "File uploaded successfully",
+                    filename: dest_filename,
+                    size: File.stat!(dest_path).size,
+                    content_type: content_type
+                  })
+                )
+                |> halt()
+              end
           end
 
         _ ->
@@ -119,5 +131,18 @@ defmodule Hibana.Plugins.Upload do
     else
       conn
     end
+  end
+
+  # Comprehensive filename sanitization to prevent path traversal and invalid characters
+  defp sanitize_filename(filename) do
+    filename
+    # Remove path traversal attempts
+    |> String.replace(~r/[\.\/]+/, "")
+    # Remove null bytes
+    |> String.replace(~r/\0/, "")
+    # Remove control characters
+    |> String.replace(~r/[\x00-\x1F\x7F]/, "")
+    # Limit length to prevent buffer overflow issues
+    |> String.slice(0, 255)
   end
 end

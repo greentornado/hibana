@@ -11,10 +11,12 @@ defmodule Hibana.Application do
   - `Hibana.Queue` - Background job queue
   - `Hibana.OTPCache` - OTP-based cache
   - `Hibana.Endpoint` - HTTP endpoint
+  - `Hibana.Cluster.Registry` - Registry for cluster PubSub (required by Cluster)
 
   Optional components that can be added to your own supervision tree:
   - `Hibana.PersistentQueue` - Disk-backed persistent queue
   - `Hibana.CircuitBreaker` - Circuit breaker for external calls
+  - `Hibana.Cluster` - Distributed cluster support (requires Registry started first)
 
   ## Usage
 
@@ -36,6 +38,7 @@ defmodule Hibana.Application do
   | Queue | Worker | Background job queue |
   | OTPCache | Worker | In-memory cache with TTL |
   | Endpoint | Worker | HTTP server |
+  | Cluster.Registry | Registry | Cluster PubSub registry |
   """
 
   use Application
@@ -43,6 +46,8 @@ defmodule Hibana.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      # Cluster PubSub registry - must start before Cluster
+      {Registry, keys: :duplicate, name: Hibana.Cluster.PubSub},
       Hibana.Plugin.Registry,
       {DynamicSupervisor, strategy: :one_for_one, name: Hibana.Plugin.Supervisor},
       Hibana.Queue,
