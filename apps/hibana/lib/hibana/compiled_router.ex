@@ -81,6 +81,7 @@ defmodule Hibana.CompiledRouter do
       import Plug.Conn
       import Hibana.Controller
 
+      # Import route macros from CompiledRouter
       import Hibana.CompiledRouter,
         only: [
           get: 2,
@@ -99,6 +100,13 @@ defmodule Hibana.CompiledRouter do
           head: 3,
           plug: 1,
           plug: 2
+        ]
+
+      # Import pipeline macros from Pipeline
+      import Hibana.Pipeline,
+        only: [
+          scope: 3,
+          pipeline: 2
         ]
 
       Module.register_attribute(__MODULE__, :routes, accumulate: true)
@@ -136,6 +144,21 @@ defmodule Hibana.CompiledRouter do
         Hibana.CompiledRouter.register_scope_pipeline(__MODULE__, unquote(method), full_path)
 
         @routes {unquote(method), full_path, unquote(handler), unquote(action)}
+      end
+    end
+
+    # Support inline anonymous function as second argument
+    defmacro unquote(method)(path, handler_fn) do
+      method = unquote(method)
+
+      quote do
+        # Check for current scope and apply prefix
+        full_path = Hibana.CompiledRouter.apply_scope_prefix(__MODULE__, unquote(path))
+
+        # Register pipeline if scope has pipe_through
+        Hibana.CompiledRouter.register_scope_pipeline(__MODULE__, unquote(method), full_path)
+
+        @routes {unquote(method), full_path, {:inline_fn, unquote(Macro.escape(handler_fn))}, nil}
       end
     end
   end
@@ -192,6 +215,27 @@ defmodule Hibana.CompiledRouter do
                 @doc false
                 def unquote(fn_name)(var!(conn)) do
                   unquote(block)
+                end
+              end
+
+            clause =
+              quote do
+                defp do_match(unquote(method_str), unquote(patterns)) do
+                  {:ok, {:inline_fn, unquote(fn_name)}, nil, unquote(params)}
+                end
+              end
+
+            {clause, [inline_fn | acc]}
+
+          {:inline_fn, fun} ->
+            # Anonymous function stored directly - generate a wrapper function
+            fn_name = :"__anon_handler_#{:erlang.phash2({method, path})}__"
+
+            inline_fn =
+              quote do
+                @doc false
+                def unquote(fn_name)(var!(conn)) do
+                  unquote(fun).(var!(conn))
                 end
               end
 

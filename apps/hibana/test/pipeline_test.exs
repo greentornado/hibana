@@ -16,7 +16,9 @@ defmodule Hibana.PipelineTest do
         get "/", fn conn -> Hibana.Controller.text(conn, "OK") end
       end
 
-      assert function_exported?(TestRouter, :__using__, 1)
+      # Router should compile successfully with macros imported
+      assert Code.ensure_loaded?(TestRouter)
+      assert function_exported?(TestRouter, :call, 2)
     end
   end
 
