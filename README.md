@@ -1,5 +1,19 @@
 # Hibana 火花
 
+```
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║     ██╗  ██╗██╗██████╗  █████╗ ███╗   ██╗ █████╗               ║
+║     ██║  ██║██║██╔══██╗██╔══██╗████╗  ██║██╔══██╗              ║
+║     ███████║██║██████╔╝███████║██╔██╗ ██║███████║              ║
+║     ██╔══██║██║██╔══██╗██╔══██║██║╚██╗██║██╔══██║              ║
+║     ██║  ██║██║██████╔╝██║  ██║██║ ╚████║██║  ██║              ║
+║     ╚═╝  ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝              ║
+║                                                                  ║
+║          🚀 The Lightweight Elixir Web Framework                 ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 > *A single spark can start a prairie fire.*
 
 A lightweight Elixir web framework built on Plug and Cowboy for APIs and microservices. Direct routing like Sinatra, powerful plugins like Phoenix, full OTP under the hood.
@@ -33,6 +47,87 @@ end
 mix deps.get && mix run
 curl http://localhost:4000/hello
 # => {"message":"Hello, World!"}
+```
+
+## Smart App Generator
+
+Create production-ready Hibana applications in seconds with our interactive generator.
+
+### Quick Generation
+
+```bash
+# Interactive mode - prompts for all options
+mix gen.app my_app
+
+# Non-interactive mode with full configuration
+mix gen.app my_app \
+  --template api \
+  --database postgres \
+  --auth jwt \
+  --docker \
+  --ci
+
+# Minimal API without database
+mix gen.app my_api --template api --database none
+```
+
+### Available Templates
+
+| Template | Description | Features |
+|----------|-------------|----------|
+| `api` | REST API | JSON endpoints, CORS, request parsing |
+| `full` | Full web app | HTML templates, sessions, static files |
+| `realtime` | Real-time app | WebSockets, LiveView support |
+| `minimal` | Minimal setup | Start from scratch |
+
+### Options
+
+- `--template` - Application template (api, full, realtime, minimal)
+- `--database` - Database type (postgres, mysql, sqlite, none)
+- `--auth` - Authentication type (jwt, api_key, none)
+- `--docker` - Include Docker and docker-compose setup
+- `--ci` - Include GitHub Actions CI/CD workflow
+- `--skip-git` - Skip git initialization
+- `--bandit` - Use Bandit HTTP server instead of Cowboy
+
+### Generated Structure
+
+```
+my_app/
+├── lib/my_app/
+│   ├── application.ex      # OTP Application
+│   ├── endpoint.ex         # HTTP Endpoint
+│   ├── router.ex           # URL Routing
+│   ├── controllers/        # Request handlers
+│   └── models/             # Database models (if DB enabled)
+├── config/
+│   ├── config.exs          # Main configuration
+│   ├── dev.exs             # Development config
+│   ├── test.exs            # Test config
+│   └── prod.exs            # Production config
+├── test/                   # Test files
+├── Dockerfile              # Docker image (if --docker)
+├── docker-compose.yml      # Docker compose (if --docker)
+├── .github/workflows/ci.yml # CI pipeline (if --ci)
+├── .gitignore
+├── mix.exs
+└── README.md
+```
+
+### Example Output
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  🎉 App created successfully!                                    ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Next steps:
+  cd my_app
+  mix deps.get
+  mix ecto.setup
+  mix run --no-halt
+
+Happy coding with Hibana! 🚀
 ```
 
 ## Features
